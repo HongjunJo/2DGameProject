@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="LevelData" format=3 uid="uid://5nj818oexmtc"]
+
+[ext_resource type="Texture2D" uid="uid://ceg35poj6vnrf" path="res://Assets/일월오봉도.jpg" id="1_bpjvm"]
+[ext_resource type="Script" uid="uid://dq8uf0uuh8r06" path="res://Scripts/LevelData.gd" id="2_0eq8p"]
+
+[resource]
+script = ExtResource("2_0eq8p")
+artifact_texture = ExtResource("1_bpjvm")
+grid_size = Vector2(5, 5)

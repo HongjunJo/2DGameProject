@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://dbab000eqcijr"]
+
+[ext_resource type="Script" uid="uid://qohs210tgmsg" path="res://Scripts/board_manager.gd" id="1_dplj4"]
+[ext_resource type="Resource" uid="uid://5nj818oexmtc" path="res://Data/Level1_Data.tres" id="2_1h6ic"]
+[ext_resource type="PackedScene" uid="uid://b0qqn5g31drt" path="res://Scenes/tile.tscn" id="3_llnrj"]
+
+[node name="BoardManager" type="Node2D" unique_id=2063133726]
+script = ExtResource("1_dplj4")
+level_data = ExtResource("2_1h6ic")
+tile_scene = ExtResource("3_llnrj")
+tile_spacing = 30.0
+
+[node name="PathLine" type="Line2D" parent="." unique_id=419310856]
+z_index = 15
+width = 15.0
+default_color = Color(1, 0.84313726, 0, 1)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
