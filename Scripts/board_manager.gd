@@ -4,6 +4,7 @@ extends Node2D
 @export var tile_scene: PackedScene
 @export var max_board_size: Vector2 = Vector2(800, 800) # 화면에서 보드가 차지할 수 있는 최대 크기 제한
 @export var tile_spacing: float = 5.0 # 타일 사이의 틈(여백) 크기
+@export var shuffle_steps: int = 15 # ✨ 추가: 오토 셔플 시 이동할 칸 수 (난이도 조절용)
 
 @onready var path_line: Line2D = $PathLine # 선 긋기 노드
 
@@ -45,6 +46,15 @@ func generate_board():
 		for x in range(level_data.grid_size.x):
 			var grid_pos = Vector2(x, y)
 			create_tile(grid_pos)
+
+	# 보드 생성 후 자동으로 섞기 실행
+	for y in range(level_data.grid_size.y):
+		for x in range(level_data.grid_size.x):
+			var grid_pos = Vector2(x, y)
+			create_tile(grid_pos)
+			
+	# 보드 생성 완료 후 자동으로 섞기 실행
+	shuffle_board()
 
 func create_tile(grid_pos: Vector2):
 	var tile = tile_scene.instantiate() as Tile
@@ -211,7 +221,7 @@ func check_win_condition():
 		rollback_path() # ✨ 추가: 실패 시 롤백 실행		
 
 # ==========================================
-# ✨ 피드백 및 연출 (Phase 2)
+# ✨ 피드백 및 연출
 # ==========================================
 
 # 타일 거부 피드백 (좌우로 짧게 덜덜 흔들림)
@@ -252,3 +262,96 @@ func _rollback_step():
 	
 	# 0.06초(스왑 시간 0.05초 + 여유 0.01초) 대기 후 다음 스텝 실행
 	get_tree().create_timer(0.06).timeout.connect(_rollback_step)
+
+# ==========================================
+# 🎲 오토 셔플 (클리어 보장 시뮬레이션)
+# ==========================================
+func shuffle_board():
+	randomize() # 난수 시드 초기화 (매번 다르게 섞임)
+	
+	var success = false
+	var attempts = 0
+	
+	# 장애물 때문에 길이 막힐(Deadlock) 경우를 대비해 최대 100번까지 리트라이
+	while not success and attempts < 100:
+		attempts += 1
+		success = _try_generate_path(shuffle_steps)
+		
+	if not success:
+		print("경고: 완벽한 셔플 경로를 찾지 못했습니다. 부분적으로만 섞입니다.")
+		
+	# 논리적으로 섞인 배열에 맞춰 타일들의 화면상 위치를 즉시 동기화
+	_sync_visuals_instantly()
+	print("셔플 완료! (시뮬레이션 시도 횟수: ", attempts, ")")
+
+func _try_generate_path(steps: int) -> bool:
+	_reset_board_logic() # 리트라이를 위해 보드를 정답 상태로 초기화
+	
+	# 1. 무작위 시작점 찾기 (장애물이 아닌 곳)
+	var start_pos = _get_random_valid_pos()
+	var current_pos = start_pos
+	var visited_path: Array[Vector2] = [current_pos]
+	
+	# 2. 한붓그리기로 역산하며 섞기
+	for i in range(steps):
+		var neighbors = _get_unvisited_neighbors(current_pos, visited_path)
+		
+		# 막다른 길에 갇힌 경우 (Deadlock)
+		if neighbors.is_empty():
+			# 목표 스텝의 70% 이상 섞였으면 그냥 인정, 아니면 실패(리트라이)
+			return visited_path.size() >= (steps * 0.7)
+			
+		var next_pos = neighbors.pick_random()
+		
+		# 논리적 스왑 (화면 이동 없이 데이터만 교환)
+		_swap_logic_only(current_pos, next_pos)
+		
+		visited_path.append(next_pos)
+		current_pos = next_pos
+		
+	return true
+
+# --- 셔플용 헬퍼 함수들 ---
+
+# 보드를 무조건 정답(원본) 상태로 되돌림
+func _reset_board_logic():
+	var all_tiles = tiles.values()
+	tiles.clear()
+	for tile in all_tiles:
+		tile.current_grid_pos = tile.target_grid_pos
+		tiles[tile.target_grid_pos] = tile
+
+# 장애물이 아닌 무작위 타일 위치 반환
+func _get_random_valid_pos() -> Vector2:
+	var valid_positions = []
+	for pos in tiles.keys():
+		if not tiles[pos].is_obstacle:
+			valid_positions.append(pos)
+	return valid_positions.pick_random()
+
+# 현재 위치에서 이동 가능한(방문 안 했고, 장애물 아닌) 상하좌우 타일 목록 반환
+func _get_unvisited_neighbors(pos: Vector2, visited: Array[Vector2]) -> Array[Vector2]:
+	var neighbors: Array[Vector2] = []
+	var directions = [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]
+	
+	for dir in directions:
+		var next_pos = pos + dir
+		if is_valid_grid_pos(next_pos) and not tiles[next_pos].is_obstacle and not (next_pos in visited):
+			neighbors.append(next_pos)
+	return neighbors
+
+# 애니메이션 없이 데이터만 즉각 교환
+func _swap_logic_only(pos1: Vector2, pos2: Vector2):
+	var tile1 = tiles[pos1]
+	var tile2 = tiles[pos2]
+	
+	tiles[pos1] = tile2
+	tiles[pos2] = tile1
+	tile1.current_grid_pos = pos2
+	tile2.current_grid_pos = pos1
+
+# 셔플이 다 끝난 후 화면상 좌표로 순간이동
+func _sync_visuals_instantly():
+	for pos in tiles.keys():
+		var tile = tiles[pos]
+		tile.position = get_center_pos_from_grid(pos)
