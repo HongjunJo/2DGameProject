@@ -4,7 +4,6 @@ extends Node2D
 @export var tile_scene: PackedScene
 @export var max_board_size: Vector2 = Vector2(800, 800) # 화면에서 보드가 차지할 수 있는 최대 크기 제한
 @export var tile_spacing: float = 5.0 # 타일 사이의 틈(여백) 크기
-@export var shuffle_steps: int = 15 # ✨ 추가: 오토 셔플 시 이동할 칸 수 (난이도 조절용)
 
 @onready var path_line: Line2D = $PathLine # 선 긋기 노드
 
@@ -41,11 +40,6 @@ func generate_board():
 	
 	# 타일 하나당 크기는 원본 크기 그대로 유지
 	tile_size = Vector2(tex_size.x / level_data.grid_size.x, tex_size.y / level_data.grid_size.y)
-	
-	for y in range(level_data.grid_size.y):
-		for x in range(level_data.grid_size.x):
-			var grid_pos = Vector2(x, y)
-			create_tile(grid_pos)
 
 	# 보드 생성 후 자동으로 섞기 실행
 	for y in range(level_data.grid_size.y):
@@ -60,20 +54,28 @@ func create_tile(grid_pos: Vector2):
 	var tile = tile_scene.instantiate() as Tile
 	add_child(tile)
 	
-	# Region 사각형 영역 계산 (원본 이미지 좌표계 기준)
 	var region_rect = Rect2(grid_pos * tile_size, tile_size)
 	
-	# 장애물 여부 확인
-	var is_obs = grid_pos in level_data.obstacles
+	# ✨ 픽스 1. 장애물 여부 검사 (부동소수점 오차 완벽 차단)
+	var is_obs = false
+	for obs in level_data.obstacles:
+		if round(obs.x) == round(grid_pos.x) and round(obs.y) == round(grid_pos.y):
+			is_obs = true
+			break
+			
+	# ✨ 픽스 2. 단방향 타일 검사 (마찬가지로 오차 차단)
+	var dir = Vector2.ZERO
+	for key in level_data.directional_tiles.keys():
+		if round(key.x) == round(grid_pos.x) and round(key.y) == round(grid_pos.y):
+			dir = level_data.directional_tiles[key]
+			break
 	
-	# 타일 초기화
-	tile.setup(level_data.artifact_texture, region_rect, grid_pos, tile_size, is_obs)
+	tile.setup(level_data.artifact_texture, region_rect, grid_pos, tile_size, is_obs, dir)
 	
-	# 여백(tile_spacing)을 포함한 좌표(Step) 계산
+	# ✨ 픽스 3. 앗차! 지난번에 빠졌던 타일 간격(Spacing) 복구
 	var step = tile_size + Vector2(tile_spacing, tile_spacing)
 	tile.position = grid_pos * step + (tile_size / 2)
 	
-	# 딕셔너리에 저장
 	tiles[grid_pos] = tile
 
 # ==========================================
@@ -118,17 +120,15 @@ func start_drag(local_pos: Vector2):
 func continue_drag(local_pos: Vector2):
 	var grid_pos = get_grid_pos_from_local(local_pos)
 	if not is_valid_grid_pos(grid_pos): return
-
-	# 마우스가 '이전과 다른 새로운 칸'으로 넘어갔을 때만 연산 진행 (스팸 방지)
 	if grid_pos == current_mouse_grid_pos: return 
-	current_mouse_grid_pos = grid_pos # 위치 갱신
-
+	current_mouse_grid_pos = grid_pos
+	
 	var last_pos = path_stack.back()
 	
 	if grid_pos != last_pos:
 		var diff = grid_pos - last_pos
 		
-		# 1. 역방향 이동 (Undo)
+		# 1. 역방향 이동 (Undo) - 역방향은 방향 제약 무시하고 돌아갈 수 있어야 함
 		if path_stack.size() >= 2 and grid_pos == path_stack[path_stack.size() - 2]:
 			swap_tiles(last_pos, grid_pos)
 			path_stack.pop_back()
@@ -136,9 +136,16 @@ func continue_drag(local_pos: Vector2):
 			
 		# 2. 새로운 전진
 		elif abs(diff.x) + abs(diff.y) == 1:
-			# ✨ 수정: 방문한 타일이거나 장애물이면 진입을 막고 흔들기(Shake) 애니메이션 실행
+			var current_tile = tiles[last_pos]
+			
+			# ✨ 기믹 추가: 현재 타일에 단방향 제약이 있다면, 내가 이동하려는 방향(diff)과 일치하는지 검사
+			if current_tile.allowed_direction != Vector2.ZERO and diff != current_tile.allowed_direction:
+				shake_tile(current_tile) # 방향이 다르면 덜덜 흔들고 거부
+				return
+			
+			# 방문 타일이거나 장애물이면 진입 거부
 			if grid_pos in path_stack or tiles[grid_pos].is_obstacle:
-				shake_tile(tiles[last_pos]) 
+				shake_tile(current_tile) 
 				return 
 				
 			swap_tiles(last_pos, grid_pos)
@@ -146,7 +153,6 @@ func continue_drag(local_pos: Vector2):
 			
 			tiles[grid_pos].z_index = 10
 			tiles[last_pos].z_index = 0
-			
 			path_line.add_point(get_center_pos_from_grid(grid_pos))
 
 func end_drag():
@@ -267,22 +273,20 @@ func _rollback_step():
 # 🎲 오토 셔플 (클리어 보장 시뮬레이션)
 # ==========================================
 func shuffle_board():
-	randomize() # 난수 시드 초기화 (매번 다르게 섞임)
-	
+	randomize() 
 	var success = false
 	var attempts = 0
 	
-	# 장애물 때문에 길이 막힐(Deadlock) 경우를 대비해 최대 100번까지 리트라이
 	while not success and attempts < 100:
 		attempts += 1
-		success = _try_generate_path(shuffle_steps)
+		# ✨ 매니저의 변수 대신 level_data에서 셔플 횟수를 가져옵니다.
+		success = _try_generate_path(level_data.shuffle_steps) 
 		
 	if not success:
-		print("경고: 완벽한 셔플 경로를 찾지 못했습니다. 부분적으로만 섞입니다.")
+		print("경고: 완벽한 셔플 경로를 찾지 못했습니다.")
 		
-	# 논리적으로 섞인 배열에 맞춰 타일들의 화면상 위치를 즉시 동기화
 	_sync_visuals_instantly()
-	print("셔플 완료! (시뮬레이션 시도 횟수: ", attempts, ")")
+	print("셔플 완료! (시도 횟수: ", attempts, ")")
 
 func _try_generate_path(steps: int) -> bool:
 	_reset_board_logic() # 리트라이를 위해 보드를 정답 상태로 초기화
