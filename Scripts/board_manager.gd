@@ -1,4 +1,7 @@
 extends Node2D
+class_name BoardManager
+
+signal board_generated(texture: Texture2D, position: Vector2, scaled_size: Vector2)
 
 @export var level_data: LevelData
 @export var tile_scene: PackedScene
@@ -13,11 +16,8 @@ var is_dragging: bool = false
 var path_stack: Array[Vector2] = [] # 지나온 궤적을 저장할 스택
 var is_locked: bool = false # 애니메이션 재생 중 입력 방지용 플래그
 var current_mouse_grid_pos: Vector2 = Vector2(-1, -1) # ✨ 추가: 중복 연산 방지용 변수
+var solution_start_pos: Vector2 # 힌트 버튼을 눌렀을 때 반짝일 정답 타일의 위치 (그리드 좌표)
 
-
-func _ready():
-	if level_data and level_data.artifact_texture:
-		generate_board()
 
 func generate_board():
 	var tex_size = level_data.artifact_texture.get_size()
@@ -37,7 +37,10 @@ func generate_board():
 	var viewport_size = get_viewport_rect().size
 	var scaled_board_size = total_board_size * scale_factor
 	self.position = (viewport_size - scaled_board_size) / 2
-	
+
+	# ✨ 부모(GameStage)에게 나 이 좌표에 이 크기로 배치 완료됨! 하고 알림
+	board_generated.emit(level_data.artifact_texture, self.position, scaled_board_size)
+
 	# 타일 하나당 크기는 원본 크기 그대로 유지
 	tile_size = Vector2(tex_size.x / level_data.grid_size.x, tex_size.y / level_data.grid_size.y)
 
@@ -313,6 +316,8 @@ func _try_generate_path(steps: int) -> bool:
 		visited_path.append(next_pos)
 		current_pos = next_pos
 		
+	solution_start_pos = current_pos
+
 	return true
 
 # --- 셔플용 헬퍼 함수들 ---
@@ -359,3 +364,20 @@ func _sync_visuals_instantly():
 	for pos in tiles.keys():
 		var tile = tiles[pos]
 		tile.position = get_center_pos_from_grid(pos)
+
+# ==========================================
+# ✨ 힌트 기능: 정답 타일 반짝이기
+# ==========================================
+func highlight_hint_tile():
+	if not tiles.has(solution_start_pos): return
+	var hint_tile = tiles[solution_start_pos]
+	
+	var tween = create_tween()
+	hint_tile.z_index = 20
+	tween.tween_property(hint_tile.sprite, "modulate", Color.GOLD, 0.2)
+	tween.tween_property(hint_tile, "scale", Vector2(1.1, 1.1), 0.2)
+	tween.tween_property(hint_tile.sprite, "modulate", Color.WHITE, 0.2)
+	tween.tween_property(hint_tile, "scale", Vector2(1.0, 1.0), 0.2)
+	tween.set_loops(3)
+	tween.finished.connect(func(): hint_tile.z_index = 0)
+

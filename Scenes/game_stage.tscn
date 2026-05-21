@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://csf6buv44n0o0"]
+
+[ext_resource type="Script" uid="uid://daamrxrqut4cv" path="res://Scripts/game_stage.gd" id="1_lqrsd"]
+[ext_resource type="PackedScene" uid="uid://dbab000eqcijr" path="res://Scenes/board_manager.tscn" id="1_vihmk"]
+[ext_resource type="PackedScene" uid="uid://x7i2hjtxhrm" path="res://Scenes/ui_manager.tscn" id="2_lqrsd"]
+
+[node name="GameStage" type="Node2D" unique_id=507830966]
+script = ExtResource("1_lqrsd")
+
+[node name="BoardManager" parent="." unique_id=2063133726 instance=ExtResource("1_vihmk")]
+
+[node name="UIManager" parent="." unique_id=135384159 instance=ExtResource("2_lqrsd")]
+
+[node name="HintTimer" type="Timer" parent="." unique_id=1980069744]
+wait_time = 15.0
+one_shot = true
+autostart = true

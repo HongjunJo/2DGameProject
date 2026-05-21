@@ -1,0 +1,66 @@
+extends CanvasLayer
+class_name UIManager
+
+signal view_button_down
+signal view_button_up
+signal hint_button_pressed
+
+@onready var target_overlay: TextureRect = $TargetOverlay
+@onready var btn_view: Button = $BtnView
+@onready var btn_hint: Button = $BtnHint
+
+# ✨ 추가: 깜빡임 애니메이션을 추적할 변수
+var hint_tween: Tween
+
+func _ready():
+	target_overlay.hide()
+	
+	# 내부 버튼 시그널 중계
+	btn_view.button_down.connect(func(): view_button_down.emit())
+	btn_view.button_up.connect(func(): view_button_up.emit())
+	btn_hint.pressed.connect(func(): hint_button_pressed.emit())
+	
+	# ✨ 초기 상태: 힌트 버튼 잠금!
+	reset_hint_button()
+
+func setup_overlay(texture: Texture2D, screen_pos: Vector2, scaled_size: Vector2):
+	target_overlay.texture = texture
+	target_overlay.position = screen_pos
+	target_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	target_overlay.stretch_mode = TextureRect.STRETCH_SCALE
+	target_overlay.size = scaled_size
+	target_overlay.custom_minimum_size = scaled_size
+
+func show_overlay():
+	target_overlay.show()
+
+func hide_overlay():
+	target_overlay.hide()
+
+# ==========================================
+# ✨ 힌트 버튼 제어 로직
+# ==========================================
+
+# 15초 타이머 종료 시 호출 (GameStage가 부름)
+func play_hint_button_pulse():
+	# 혹시 이미 깜빡이고 있으면 중복 실행 방지
+	if hint_tween and hint_tween.is_valid():
+		return
+		
+	# ✨ 15초가 지났으니 버튼 클릭 허용!
+	btn_hint.disabled = false 
+	
+	# 찰진 깜빡임 애니메이션
+	hint_tween = create_tween().set_loops()
+	hint_tween.tween_property(btn_hint, "modulate", Color.GOLD, 0.5)
+	hint_tween.tween_property(btn_hint, "modulate", Color.WHITE, 0.5)
+
+# 마우스 조작 시 호출 (GameStage가 부름)
+func reset_hint_button():
+	# 기존에 재생 중이던 깜빡임 끄기
+	if hint_tween and hint_tween.is_valid():
+		hint_tween.kill()
+		
+	# ✨ 조작을 시작했으니 버튼 다시 잠금! (반투명 & 클릭 불가)
+	btn_hint.disabled = true
+	btn_hint.modulate = Color(1, 1, 1, 0.5)

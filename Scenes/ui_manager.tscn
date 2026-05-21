@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://x7i2hjtxhrm"]
+
+[ext_resource type="Script" uid="uid://c88plttbdu41g" path="res://Scripts/ui_manager.gd" id="1_nphyr"]
+
+[node name="UIManager" type="CanvasLayer" unique_id=135384159]
+script = ExtResource("1_nphyr")
+
+[node name="TargetOverlay" type="TextureRect" parent="." unique_id=565442220]
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
+
+[node name="BtnView" type="Button" parent="." unique_id=1788787248]
+offset_right = 8.0
+offset_bottom = 8.0
+text = "원본 보기"
+
+[node name="BtnHint" type="Button" parent="." unique_id=1971294187]
+offset_top = 35.0
+offset_right = 40.0
+offset_bottom = 66.0
+text = "힌트"
