@@ -4,10 +4,13 @@ class_name UIManager
 signal view_button_down
 signal view_button_up
 signal hint_button_pressed
+signal next_stage_pressed
 
 @onready var target_overlay: TextureRect = $TargetOverlay
 @onready var btn_view: Button = $BtnView
 @onready var btn_hint: Button = $BtnHint
+@onready var result_panel: Control = $ResultPanel
+@onready var btn_next_stage: Button = $ResultPanel/BtnNextStage
 
 # ✨ 추가: 깜빡임 애니메이션을 추적할 변수
 var hint_tween: Tween
@@ -20,6 +23,10 @@ func _ready():
 	btn_view.button_up.connect(func(): view_button_up.emit())
 	btn_hint.pressed.connect(func(): hint_button_pressed.emit())
 	
+	# 결과 패널 초기 설정
+	result_panel.hide()
+	btn_next_stage.pressed.connect(func(): next_stage_pressed.emit())
+
 	# ✨ 초기 상태: 힌트 버튼 잠금!
 	reset_hint_button()
 
@@ -36,6 +43,15 @@ func show_overlay():
 
 func hide_overlay():
 	target_overlay.hide()
+
+# 클리어 시 결과창 띄우기
+func show_result_ui(is_last: bool):
+	result_panel.show()
+	result_panel.modulate.a = 0
+	if is_last:
+		btn_next_stage.text = "모든 유물 복원 완료 (메인으로)"
+	
+	create_tween().tween_property(result_panel, "modulate:a", 1.0, 0.5)
 
 # ==========================================
 # ✨ 힌트 버튼 제어 로직

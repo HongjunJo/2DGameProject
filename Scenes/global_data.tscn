@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://7emof3e66juj"]
+
+[ext_resource type="Script" uid="uid://c5s3fooncml8u" path="res://Scripts/GlobalData.gd" id="1_gqdbo"]
+[ext_resource type="Script" uid="uid://dq8uf0uuh8r06" path="res://Scripts/LevelData.gd" id="2_yc603"]
+[ext_resource type="Resource" uid="uid://5nj818oexmtc" path="res://Data/Level1.tres" id="3_uo4rl"]
+[ext_resource type="Resource" uid="uid://bc1tk6sslejth" path="res://Data/Level2.tres" id="4_55qoo"]
+[ext_resource type="Resource" uid="uid://btyk8gsptokwk" path="res://Data/Level3.tres" id="5_1dqeo"]
+[ext_resource type="Resource" uid="uid://x35axeg3kauf" path="res://Data/Level4.tres" id="6_rxlfs"]
+
+[node name="GlobalData" type="Node" unique_id=1720614219]
+script = ExtResource("1_gqdbo")
+levels = Array[ExtResource("2_yc603")]([ExtResource("3_uo4rl"), ExtResource("4_55qoo"), ExtResource("5_1dqeo"), ExtResource("6_rxlfs")])

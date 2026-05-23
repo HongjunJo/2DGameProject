@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dbab000eqcijr"]
 
 [ext_resource type="Script" uid="uid://qohs210tgmsg" path="res://Scripts/board_manager.gd" id="1_dplj4"]
-[ext_resource type="Resource" uid="uid://5nj818oexmtc" path="res://Data/Level1_Data.tres" id="2_1h6ic"]
+[ext_resource type="Resource" uid="uid://5nj818oexmtc" path="res://Data/Level1.tres" id="2_1h6ic"]
 [ext_resource type="PackedScene" uid="uid://b0qqn5g31drt" path="res://Scenes/tile.tscn" id="3_llnrj"]
 
 [node name="BoardManager" type="Node2D" unique_id=2063133726]

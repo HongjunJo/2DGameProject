@@ -20,3 +20,51 @@ offset_top = 35.0
 offset_right = 40.0
 offset_bottom = 66.0
 text = "힌트"
+
+[node name="ResultPanel" type="Control" parent="." unique_id=2090521726]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="ResultPanel" unique_id=669185494]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(870, 974)
+color = Color(0, 0, 0, 0.5882353)
+
+[node name="ResultLabel" type="Label" parent="ResultPanel" unique_id=1277600777]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -54.5
+offset_top = -11.5
+offset_right = 54.5
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "유물 복원 성공!"
+
+[node name="BtnNextStage" type="Button" parent="ResultPanel" unique_id=1233727500]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -72.5
+offset_top = -31.0
+offset_right = 72.5
+grow_horizontal = 2
+grow_vertical = 0
+text = "다음 유물 복원하기"

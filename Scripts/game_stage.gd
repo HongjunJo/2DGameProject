@@ -9,33 +9,50 @@ var current_hint_time: float = 15.0
 var is_hint_unlocked: bool = false # ✨ 추가: 힌트가 한 번이라도 켜졌는지 기억하는 스위치
 
 # GameStage.gd 내부
+# GameStage.gd 내부 수정
+
 func _ready():
-	# 1. 보드 매니저가 생성이 완료되면 UI 오버레이 설정을 동기화하도록 시그널 연결
-	board_manager.board_generated.connect(_on_board_generated)
+	# ✨ 핵심: 현재 스테이지 데이터 주입
+	var current_level = GlobalData.get_current_level()
+	board_manager.level_data = current_level
 	
-	# 2. UI 매니저의 버튼 신호를 보드 매니저의 기능과 연결
+	# 시그널 연결
+	board_manager.board_generated.connect(_on_board_generated)
 	ui_manager.view_button_down.connect(func(): ui_manager.show_overlay())
 	ui_manager.view_button_up.connect(func(): ui_manager.hide_overlay())
 	ui_manager.hint_button_pressed.connect(_on_hint_pressed)
-
-	# ✨ 1. 타이머 아웃 시 익명 함수 대신 전용 함수 연결
 	hint_timer.timeout.connect(_on_hint_timer_timeout)
-	
 	board_manager.player_interacted.connect(_reset_idle_timer)
-	# 보드에서 퍼즐이 클리어되었다고 알리면 UI 버튼 끄고 타이머 정지!
-	board_manager.puzzle_cleared.connect(func():
-		hint_timer.stop() # ✨ 추가: 백그라운드에서 타이머가 다시 도는 것을 원천 차단
-		ui_manager.disable_all_buttons()
-	)
 	
-	# ✨ 추가: 보드 매니저의 LevelData에서 힌트 시간을 가져와 세팅
-	if board_manager.level_data:
-		current_hint_time = board_manager.level_data.hint_wait_time
-		hint_timer.wait_time = current_hint_time
-		hint_timer.start(current_hint_time) # 타이머 최초 시작
+	# ✨ 클리어 시 처리
+	board_manager.puzzle_cleared.connect(_on_puzzle_cleared)
+	
+	# ✨ 다음 스테이지 버튼 클릭 시 처리
+	ui_manager.next_stage_pressed.connect(_on_next_stage_requested)
 
-	# ✨ 4. 통신망 연결이 다 끝났으니, 보드 매니저에게 퍼즐 생성을 명령!
+	# 힌트 시간 세팅
+	current_hint_time = current_level.hint_wait_time
+	hint_timer.start(current_hint_time)
+
+	# 게임 시작
 	board_manager.generate_board()
+
+func _on_puzzle_cleared():
+	hint_timer.stop()
+	ui_manager.disable_all_buttons()
+	
+	# 쥬시한 연출이 끝날 때쯤 결과 UI 띄우기 (약 1.5초 뒤)
+	await get_tree().create_timer(1.5).timeout
+	ui_manager.show_result_ui(GlobalData.is_last_level())
+
+func _on_next_stage_requested():
+	if GlobalData.is_last_level():
+		GlobalData.current_level_index = 0
+		get_tree().change_scene_to_file("res://Scenes/MainMenu.tscn")
+	else:
+		GlobalData.next_level()
+		# ✨ 같은 GameStage 씬을 다시 로드하면, _ready에서 다음 데이터를 가져옴
+		get_tree().reload_current_scene()
 
 # ==========================================
 # ✨ 2. 타이머가 끝났을 때 스위치를 켜는 전용 함수

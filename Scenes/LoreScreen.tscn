@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://cauqua1kgjuua"]
+
+[ext_resource type="Script" uid="uid://jjnpmj1mgwmv" path="res://Scripts/lore_screen.gd" id="1_i7spq"]
+
+[node name="LoreScreen" type="Control" unique_id=353427937]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_i7spq")
+
+[node name="Label" type="Label" parent="." unique_id=2126014945]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -56.0
+offset_top = -11.5
+offset_right = 56.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "대충엄청난로어"
+
+[node name="BtnNext" type="Button" parent="." unique_id=416112217]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -38.0
+offset_top = -31.0
+offset_right = 39.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "복원 시작"

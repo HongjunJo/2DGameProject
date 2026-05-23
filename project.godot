@@ -11,8 +11,13 @@ config_version=5
 [application]
 
 config/name="2D Game project"
+run/main_scene="uid://bdyk8a2xfn78w"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+GlobalData="*uid://7emof3e66juj"
 
 [display]
 
