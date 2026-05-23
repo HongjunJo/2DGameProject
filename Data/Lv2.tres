@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="LevelData" format=3 uid="uid://cy57ph4qhkgv5"]
+
+[ext_resource type="Texture2D" uid="uid://mqgcuxajpi1p" path="res://Assets/책가도.jpg" id="1_1grvc"]
+[ext_resource type="Script" uid="uid://dq8uf0uuh8r06" path="res://Scripts/LevelData.gd" id="1_fx0ix"]
+
+[resource]
+script = ExtResource("1_fx0ix")
+artifact_texture = ExtResource("1_1grvc")
+grid_size = Vector2(4, 3)
+shuffle_steps = 1
+metadata/_custom_type_script = "uid://dq8uf0uuh8r06"

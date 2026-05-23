@@ -1,9 +1,0 @@
-[gd_resource type="Resource" script_class="LevelData" format=3 uid="uid://bc1tk6sslejth"]
-
-[ext_resource type="Texture2D" uid="uid://cu3l2cdao2bqt" path="res://Assets/모란도 병풍.png" id="1_ssxru"]
-[ext_resource type="Script" uid="uid://dq8uf0uuh8r06" path="res://Scripts/LevelData.gd" id="2_o2san"]
-
-[resource]
-script = ExtResource("2_o2san")
-artifact_texture = ExtResource("1_ssxru")
-shuffle_steps = 1

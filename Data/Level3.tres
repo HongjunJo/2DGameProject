@@ -1,9 +1,0 @@
-[gd_resource type="Resource" script_class="LevelData" format=3 uid="uid://btyk8gsptokwk"]
-
-[ext_resource type="Texture2D" uid="uid://ceg35poj6vnrf" path="res://Assets/일월오봉도.jpg" id="1_aitwg"]
-[ext_resource type="Script" uid="uid://dq8uf0uuh8r06" path="res://Scripts/LevelData.gd" id="2_lhl3l"]
-
-[resource]
-script = ExtResource("2_lhl3l")
-artifact_texture = ExtResource("1_aitwg")
-shuffle_steps = 1
