@@ -7,6 +7,8 @@
 script = ExtResource("2_0eq8p")
 artifact_texture = ExtResource("1_bpjvm")
 grid_size = Vector2(5, 5)
+shuffle_steps = 1
+hint_wait_time = 1.0
 obstacles = Array[Vector2]([Vector2(2, 2)])
 directional_tiles = {
 Vector2(1, 1): Vector2(1, 0)

@@ -2,6 +2,7 @@ extends Node2D
 class_name BoardManager
 
 signal board_generated(texture: Texture2D, position: Vector2, scaled_size: Vector2)
+signal player_interacted
 
 @export var level_data: LevelData
 @export var tile_scene: PackedScene
@@ -109,6 +110,9 @@ func start_drag(local_pos: Vector2):
 	if tiles[grid_pos].is_obstacle: return
 	
 	is_dragging = true
+
+	player_interacted.emit()
+
 	path_stack.clear()
 	path_stack.append(grid_pos)
 	

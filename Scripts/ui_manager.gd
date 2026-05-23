@@ -43,9 +43,10 @@ func hide_overlay():
 
 # 15초 타이머 종료 시 호출 (GameStage가 부름)
 func play_hint_button_pulse():
-	# 혹시 이미 깜빡이고 있으면 중복 실행 방지
+	print("🚨 힌트 타이머 발동! (버튼 활성화 시도)") # <- 이 줄 추가
 	if hint_tween and hint_tween.is_valid():
 		return
+	btn_hint.disabled = false
 		
 	# ✨ 15초가 지났으니 버튼 클릭 허용!
 	btn_hint.disabled = false 
