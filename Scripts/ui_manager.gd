@@ -65,3 +65,21 @@ func reset_hint_button():
 	# ✨ 조작을 시작했으니 버튼 다시 잠금! (반투명 & 클릭 불가)
 	btn_hint.disabled = true
 	btn_hint.modulate = Color(1, 1, 1, 0.5)
+
+# 퍼즐 클리어 시 호출 (GameStage가 부름)
+func disable_all_buttons():
+	btn_view.disabled = true
+	btn_hint.disabled = true
+	
+	if hint_tween and hint_tween.is_valid():
+		hint_tween.kill()
+	
+	var tween = create_tween().set_parallel(true)
+	tween.tween_property(btn_view, "modulate:a", 0.0, 0.3)
+	tween.tween_property(btn_hint, "modulate:a", 0.0, 0.3)
+	
+	# ✨ 추가: 알파 값이 빠진 후 확실하게 눈 앞에서 숨기기
+	tween.chain().tween_callback(func():
+		btn_view.hide()
+		btn_hint.hide()
+	)

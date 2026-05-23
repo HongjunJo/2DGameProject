@@ -3,6 +3,7 @@ class_name BoardManager
 
 signal board_generated(texture: Texture2D, position: Vector2, scaled_size: Vector2)
 signal player_interacted
+signal puzzle_cleared
 
 @export var level_data: LevelData
 @export var tile_scene: PackedScene
@@ -18,7 +19,8 @@ var path_stack: Array[Vector2] = [] # 지나온 궤적을 저장할 스택
 var is_locked: bool = false # 애니메이션 재생 중 입력 방지용 플래그
 var current_mouse_grid_pos: Vector2 = Vector2(-1, -1) # ✨ 추가: 중복 연산 방지용 변수
 var solution_start_pos: Vector2 # 힌트 버튼을 눌렀을 때 반짝일 정답 타일의 위치 (그리드 좌표)
-
+var hint_action_tween: Tween # ✨ 추가: 힌트 연타 방지용 트윈
+var board_base_size: Vector2 # ✨ 추가: 보드가 튀어 오를 때 중심점을 잡기 위한 원본 크기
 
 func generate_board():
 	var tex_size = level_data.artifact_texture.get_size()
@@ -30,6 +32,8 @@ func generate_board():
 	)
 	var total_board_size = tex_size + total_spacing
 	
+	board_base_size = total_board_size # ✨ 추가: 바운스 연출 시 중심점 계산을 위해 저장!
+
 	# 여백까지 포함한 보드가 화면(max_board_size)에 딱 맞게 들어가도록 스케일 계산
 	var scale_factor = min(max_board_size.x / total_board_size.x, max_board_size.y / total_board_size.y)
 	self.scale = Vector2(scale_factor, scale_factor)
@@ -110,17 +114,22 @@ func start_drag(local_pos: Vector2):
 	if tiles[grid_pos].is_obstacle: return
 	
 	is_dragging = true
-
-	player_interacted.emit()
-
+	player_interacted.emit() 
+	
+	# ✨ 픽스: 잡은 타일이 마침 힌트 연타/반짝임 연출 중이었다면 즉시 강제 종료 및 초기화
+	if grid_pos == solution_start_pos and hint_action_tween and hint_action_tween.is_valid():
+		hint_action_tween.kill()
+		tiles[grid_pos].scale = Vector2(1.0, 1.0)
+		tiles[grid_pos].sprite.modulate = Color.WHITE
+		tiles[grid_pos].z_index = 0
+	
 	path_stack.clear()
 	path_stack.append(grid_pos)
 	
-	current_mouse_grid_pos = grid_pos # ✨ 마우스 시작 위치 기록
+	current_mouse_grid_pos = grid_pos 
 
-	tiles[grid_pos].z_index = 10 # 드래그 중인 타일을 최상위로 올림
+	tiles[grid_pos].z_index = 10 
 	
-	# ✨ 선 긋기 시작: 기존 선 초기화 후 첫 번째 점 추가
 	path_line.clear_points()
 	path_line.add_point(get_center_pos_from_grid(grid_pos))
 
@@ -228,7 +237,6 @@ func get_center_pos_from_grid(grid_pos: Vector2) -> Vector2:
 # ==========================================
 func check_win_condition():
 	var is_clear = true
-	
 	for tile in tiles.values():
 		if tile.current_grid_pos != tile.target_grid_pos:
 			is_clear = false
@@ -236,7 +244,8 @@ func check_win_condition():
 			
 	if is_clear:
 		print("🎉 퍼즐 클리어! (유물 복원 성공)")
-		play_clear_animation() # ✨ 추가: 클리어 연출 시작!
+		puzzle_cleared.emit() # ✨ UI를 끄기 위해 사령탑에 보고
+		play_clear_animation()
 	else:
 		print("❌ 오답입니다. (아직 섞여 있음)")
 		rollback_path()
@@ -288,44 +297,56 @@ func _rollback_step():
 # ✨ Phase 5: 클리어 폴리싱 (쥬시니스)
 # ==========================================
 func play_clear_animation():
-	is_locked = true # ✨ 더 이상 조작하지 못하도록 잠금
-	
-	# 모든 타일이 동시에 움직이도록 parallel 세팅
+	is_locked = true 
 	var tween = create_tween().set_parallel(true)
 	
-	# 1단계 [스냅]: 타일 사이의 틈(tile_spacing)을 없애고 찰칵! 맞물리기
+	# ✨ 픽스 1: 타일들이 스냅되면 틈새만큼 전체 크기가 줄어들어 좌측 상단으로 쏠립니다.
+	# 이를 방지하기 위해 틈새 절반만큼 보드판(self)을 우측 하단으로 밀어 화면 정중앙을 유지합니다!
+	var grid = level_data.grid_size
+	var total_spacing = Vector2((grid.x - 1) * tile_spacing, (grid.y - 1) * tile_spacing)
+	var target_board_pos = self.position + (total_spacing * self.scale) / 2.0
+	
+	tween.tween_property(self, "position", target_board_pos, 0.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	
+	# 1단계 [스냅 & 클렌징]
 	for pos in tiles.keys():
 		var tile = tiles[pos]
-		# 여백이 제외된, '순수 원본 크기' 기준의 목표 위치 재계산
+		# 여백이 빠진 '순수 그림 위치'로 타일 이동
 		var target_pos = pos * tile_size + (tile_size / 2)
 		
-		# 0.3초 동안 CUBIC 곡선으로 쫀득하게 이동
+		tile.sprite.modulate = Color.WHITE 
+		tile.allowed_direction = Vector2.ZERO
+		tile.queue_redraw()
+		
 		tween.tween_property(tile, "position", target_pos, 0.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	
-	# 타일들이 다 달라붙은 직후에 다음 연출(빛+바운스)을 실행하도록 체인(Chain) 연결
 	tween.chain().tween_callback(_play_glow_and_bounce)
 
 func _play_glow_and_bounce():
 	var tween = create_tween().set_parallel(true)
 	
-	# 2단계 [바운스]: 보드판 전체(self)를 1.05배 튀어 오르게 했다가 원래대로 복구
 	var original_scale = self.scale
+	# ✨ 이전 단계에서 보정이 완료된 '현재 위치'를 기준으로 잡습니다.
+	var current_pos = self.position 
 	var bump_scale = original_scale * 1.05
 	
-	tween.tween_property(self, "scale", bump_scale, 0.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	# 작아질 때는 BOUNCE(띠용 하는 탄성) 효과 적용
-	tween.chain().tween_property(self, "scale", original_scale, 0.3).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	# ✨ 픽스 2: 이제 보드의 크기는 여백이 완전히 빠진 '순수 그림 크기'입니다.
+	var pure_tex_size = Vector2(tile_size.x * level_data.grid_size.x, tile_size.y * level_data.grid_size.y)
 	
-	# 3단계 [광원 Flash]: 모든 타일이 순간적으로 하얗게 빛났다가 서서히 원상복구
+	# 순수 크기를 기준으로 커진 만큼만 좌표를 빼줍니다. (완벽한 중앙 줌인/아웃)
+	var pos_offset = (original_scale - bump_scale) * (pure_tex_size / 2.0)
+	var bump_pos = current_pos + pos_offset
+	
+	tween.tween_property(self, "scale", bump_scale, 0.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "position", bump_pos, 0.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	
+	tween.chain().tween_property(self, "scale", original_scale, 0.3).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(self, "position", current_pos, 0.3).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	
 	for tile in tiles.values():
-		var orig_color = tile.sprite.modulate
-		
-		# (2, 2, 2) 처럼 1.0을 넘는 Color 값을 주면 HDR처럼 밝게 하얗게 탑니다.
 		tile.sprite.modulate = Color(2.0, 2.0, 2.0, 1.0)
-		
-		# 개별 트윈으로 서서히 원래 색으로 복구 (0.6초)
 		var color_tween = create_tween()
-		color_tween.tween_property(tile.sprite, "modulate", orig_color, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		color_tween.tween_property(tile.sprite, "modulate", Color.WHITE, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 # ==========================================
 # 🎲 오토 셔플 (클리어 보장 시뮬레이션)
@@ -423,16 +444,21 @@ func _sync_visuals_instantly():
 # ==========================================
 # ✨ 힌트 기능: 정답 타일 반짝이기
 # ==========================================
+# ✨ 힌트 기능: 정답 타일 반짝이기 (연타 방지 적용)
 func highlight_hint_tile():
 	if not tiles.has(solution_start_pos): return
+	
+	# ✨ 연타 방지: 이미 반짝이는 중이면 무시!
+	if hint_action_tween and hint_action_tween.is_valid():
+		return
+		
 	var hint_tile = tiles[solution_start_pos]
 	
-	var tween = create_tween()
+	hint_action_tween = create_tween()
 	hint_tile.z_index = 20
-	tween.tween_property(hint_tile.sprite, "modulate", Color.GOLD, 0.2)
-	tween.tween_property(hint_tile, "scale", Vector2(1.1, 1.1), 0.2)
-	tween.tween_property(hint_tile.sprite, "modulate", Color.WHITE, 0.2)
-	tween.tween_property(hint_tile, "scale", Vector2(1.0, 1.0), 0.2)
-	tween.set_loops(3)
-	tween.finished.connect(func(): hint_tile.z_index = 0)
-
+	hint_action_tween.tween_property(hint_tile.sprite, "modulate", Color.GOLD, 0.2)
+	hint_action_tween.tween_property(hint_tile, "scale", Vector2(1.1, 1.1), 0.2)
+	hint_action_tween.tween_property(hint_tile.sprite, "modulate", Color.WHITE, 0.2)
+	hint_action_tween.tween_property(hint_tile, "scale", Vector2(1.0, 1.0), 0.2)
+	hint_action_tween.set_loops(3)
+	hint_action_tween.finished.connect(func(): hint_tile.z_index = 0)

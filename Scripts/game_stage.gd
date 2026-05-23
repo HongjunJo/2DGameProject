@@ -22,7 +22,12 @@ func _ready():
 	hint_timer.timeout.connect(_on_hint_timer_timeout)
 	
 	board_manager.player_interacted.connect(_reset_idle_timer)
-
+	# 보드에서 퍼즐이 클리어되었다고 알리면 UI 버튼 끄고 타이머 정지!
+	board_manager.puzzle_cleared.connect(func():
+		hint_timer.stop() # ✨ 추가: 백그라운드에서 타이머가 다시 도는 것을 원천 차단
+		ui_manager.disable_all_buttons()
+	)
+	
 	# ✨ 추가: 보드 매니저의 LevelData에서 힌트 시간을 가져와 세팅
 	if board_manager.level_data:
 		current_hint_time = board_manager.level_data.hint_wait_time
