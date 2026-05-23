@@ -193,9 +193,18 @@ func swap_tiles(pos1: Vector2, pos2: Vector2, duration: float = 0.15):
 	var target_pos2 = pos1 * step + (tile_size / 2)
 	
 	var tween = create_tween().set_parallel(true)
-	# ✨ 수정: 고정값 0.15 대신 duration 사용
+	
+	# 1. 위치 이동 (기존 동일)
 	tween.tween_property(tile1, "position", target_pos1, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(tile2, "position", target_pos2, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	
+	# ✨ 2. 쥬시니스: 이동 시작 순간 타일을 10% 작게(0.9) 압축했다가
+	tile1.scale = Vector2(0.9, 0.9)
+	tile2.scale = Vector2(0.9, 0.9)
+	
+	# ✨ 3. 도착할 때 원래 크기(1.0)로 통통 튀며(BOUNCE) 복구
+	tween.tween_property(tile1, "scale", Vector2(1.0, 1.0), duration * 1.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(tile2, "scale", Vector2(1.0, 1.0), duration * 1.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 
 func get_grid_pos_from_local(local_pos: Vector2) -> Vector2:
 	# ✨ 수정: 마우스 좌표를 인덱스로 바꿀 때 여백이 포함된 전체 타일 간격(Step)으로 나눔
