@@ -217,17 +217,16 @@ func check_win_condition():
 	var is_clear = true
 	
 	for tile in tiles.values():
-		# 하나라도 원래 자리가 아니면 오답
 		if tile.current_grid_pos != tile.target_grid_pos:
 			is_clear = false
 			break
 			
 	if is_clear:
 		print("🎉 퍼즐 클리어! (유물 복원 성공)")
-		# TODO: 나중에 Phase 5의 클리어 폴리싱(스냅, 빛나는 연출 등)을 여기에 연결합니다.
+		play_clear_animation() # ✨ 추가: 클리어 연출 시작!
 	else:
 		print("❌ 오답입니다. (아직 섞여 있음)")
-		rollback_path() # ✨ 추가: 실패 시 롤백 실행		
+		rollback_path()
 
 # ==========================================
 # ✨ 피드백 및 연출
@@ -271,6 +270,49 @@ func _rollback_step():
 	
 	# 0.06초(스왑 시간 0.05초 + 여유 0.01초) 대기 후 다음 스텝 실행
 	get_tree().create_timer(0.06).timeout.connect(_rollback_step)
+
+# ==========================================
+# ✨ Phase 5: 클리어 폴리싱 (쥬시니스)
+# ==========================================
+func play_clear_animation():
+	is_locked = true # ✨ 더 이상 조작하지 못하도록 잠금
+	
+	# 모든 타일이 동시에 움직이도록 parallel 세팅
+	var tween = create_tween().set_parallel(true)
+	
+	# 1단계 [스냅]: 타일 사이의 틈(tile_spacing)을 없애고 찰칵! 맞물리기
+	for pos in tiles.keys():
+		var tile = tiles[pos]
+		# 여백이 제외된, '순수 원본 크기' 기준의 목표 위치 재계산
+		var target_pos = pos * tile_size + (tile_size / 2)
+		
+		# 0.3초 동안 CUBIC 곡선으로 쫀득하게 이동
+		tween.tween_property(tile, "position", target_pos, 0.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	
+	# 타일들이 다 달라붙은 직후에 다음 연출(빛+바운스)을 실행하도록 체인(Chain) 연결
+	tween.chain().tween_callback(_play_glow_and_bounce)
+
+func _play_glow_and_bounce():
+	var tween = create_tween().set_parallel(true)
+	
+	# 2단계 [바운스]: 보드판 전체(self)를 1.05배 튀어 오르게 했다가 원래대로 복구
+	var original_scale = self.scale
+	var bump_scale = original_scale * 1.05
+	
+	tween.tween_property(self, "scale", bump_scale, 0.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	# 작아질 때는 BOUNCE(띠용 하는 탄성) 효과 적용
+	tween.chain().tween_property(self, "scale", original_scale, 0.3).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	
+	# 3단계 [광원 Flash]: 모든 타일이 순간적으로 하얗게 빛났다가 서서히 원상복구
+	for tile in tiles.values():
+		var orig_color = tile.sprite.modulate
+		
+		# (2, 2, 2) 처럼 1.0을 넘는 Color 값을 주면 HDR처럼 밝게 하얗게 탑니다.
+		tile.sprite.modulate = Color(2.0, 2.0, 2.0, 1.0)
+		
+		# 개별 트윈으로 서서히 원래 색으로 복구 (0.6초)
+		var color_tween = create_tween()
+		color_tween.tween_property(tile.sprite, "modulate", orig_color, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 # ==========================================
 # 🎲 오토 셔플 (클리어 보장 시뮬레이션)
