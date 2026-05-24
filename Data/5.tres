@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="LevelData" format=3 uid="uid://ds8jxhsmpwaif"]
+
+[ext_resource type="Texture2D" uid="uid://cu3l2cdao2bqt" path="res://Assets/모란도 병풍.png" id="1_f43ww"]
+[ext_resource type="Script" uid="uid://dq8uf0uuh8r06" path="res://Scripts/LevelData.gd" id="1_keyiu"]
+
+[resource]
+script = ExtResource("1_keyiu")
+artifact_texture = ExtResource("1_f43ww")
+grid_size = Vector2(5, 5)
+shuffle_steps = 25
+metadata/_custom_type_script = "uid://dq8uf0uuh8r06"

@@ -2,11 +2,11 @@
 
 [ext_resource type="Script" uid="uid://c5s3fooncml8u" path="res://Scripts/GlobalData.gd" id="1_gqdbo"]
 [ext_resource type="Script" uid="uid://dq8uf0uuh8r06" path="res://Scripts/LevelData.gd" id="2_yc603"]
-[ext_resource type="Resource" uid="uid://coto8tsayxxt6" path="res://Data/Lv1.tres" id="3_uo4rl"]
-[ext_resource type="Resource" uid="uid://cy57ph4qhkgv5" path="res://Data/Lv2.tres" id="4_55qoo"]
-[ext_resource type="Resource" uid="uid://cb3iw37c1m3fo" path="res://Data/Lv3.tres" id="5_1dqeo"]
-[ext_resource type="Resource" uid="uid://vjq1jv5hxvvx" path="res://Data/Lv4.tres" id="6_rxlfs"]
-[ext_resource type="Resource" uid="uid://bfug1nji76wtj" path="res://Data/Lv5.tres" id="7_mprxd"]
+[ext_resource type="Resource" uid="uid://cbxtvvmhjxp5l" path="res://Data/1.tres" id="3_uo4rl"]
+[ext_resource type="Resource" uid="uid://bcvle37ca2fe7" path="res://Data/2.tres" id="4_55qoo"]
+[ext_resource type="Resource" uid="uid://d3dt7w0xermeh" path="res://Data/3.tres" id="5_1dqeo"]
+[ext_resource type="Resource" uid="uid://t4nge2wv0b12" path="res://Data/4.tres" id="6_rxlfs"]
+[ext_resource type="Resource" uid="uid://ds8jxhsmpwaif" path="res://Data/5.tres" id="7_mprxd"]
 
 [node name="GlobalData" type="Node" unique_id=1720614219]
 script = ExtResource("1_gqdbo")

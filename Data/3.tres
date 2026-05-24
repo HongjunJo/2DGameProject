@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="LevelData" format=3 uid="uid://d3dt7w0xermeh"]
+
+[ext_resource type="Texture2D" uid="uid://c6i01ua6k87qc" path="res://Assets/정선필 인왕제색도.jpg" id="1_3avxv"]
+[ext_resource type="Script" uid="uid://dq8uf0uuh8r06" path="res://Scripts/LevelData.gd" id="1_qxqko"]
+
+[resource]
+script = ExtResource("1_qxqko")
+artifact_texture = ExtResource("1_3avxv")
+grid_size = Vector2(4, 4)
+shuffle_steps = 16
+metadata/_custom_type_script = "uid://dq8uf0uuh8r06"

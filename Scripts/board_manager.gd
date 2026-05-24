@@ -7,55 +7,48 @@ signal puzzle_cleared
 
 @export var level_data: LevelData
 @export var tile_scene: PackedScene
-@export var max_board_size: Vector2 = Vector2(800, 800) # 화면에서 보드가 차지할 수 있는 최대 크기 제한
-@export var tile_spacing: float = 5.0 # 타일 사이의 틈(여백) 크기
+@export var max_board_size: Vector2 = Vector2(800, 800) 
+@export var tile_spacing: float = 5.0 
 
-@onready var path_line: Line2D = $PathLine # 선 긋기 노드
+@onready var path_line: Line2D = $PathLine 
 
 var tiles: Dictionary = {}
 var tile_size: Vector2
 var is_dragging: bool = false 
-var path_stack: Array[Vector2] = [] # 지나온 궤적을 저장할 스택
-var is_locked: bool = false # 애니메이션 재생 중 입력 방지용 플래그
-var current_mouse_grid_pos: Vector2 = Vector2(-1, -1) # ✨ 추가: 중복 연산 방지용 변수
-var solution_start_pos: Vector2 # 힌트 버튼을 눌렀을 때 반짝일 정답 타일의 위치 (그리드 좌표)
-var hint_action_tween: Tween # ✨ 추가: 힌트 연타 방지용 트윈
-var board_base_size: Vector2 # ✨ 추가: 보드가 튀어 오를 때 중심점을 잡기 위한 원본 크기
+var path_stack: Array[Vector2] = [] 
+var is_locked: bool = false 
+var current_mouse_grid_pos: Vector2 = Vector2(-1, -1) 
+var hint_target_tile: Tile # ✨ 픽스: 좌표(Vector2)가 아니라 타일 객체(Tile) 자체를 기억합니다!
+var hint_action_tween: Tween 
+var board_base_size: Vector2 
 
 func generate_board():
 	var tex_size = level_data.artifact_texture.get_size()
 	
-	# 여백을 포함한 전체 보드의 실제 물리적 크기 계산
 	var total_spacing = Vector2(
 		(level_data.grid_size.x - 1) * tile_spacing,
 		(level_data.grid_size.y - 1) * tile_spacing
 	)
 	var total_board_size = tex_size + total_spacing
 	
-	board_base_size = total_board_size # ✨ 추가: 바운스 연출 시 중심점 계산을 위해 저장!
+	board_base_size = total_board_size 
 
-	# 여백까지 포함한 보드가 화면(max_board_size)에 딱 맞게 들어가도록 스케일 계산
 	var scale_factor = min(max_board_size.x / total_board_size.x, max_board_size.y / total_board_size.y)
 	self.scale = Vector2(scale_factor, scale_factor)
 	
-	# 화면 정중앙 배치
 	var viewport_size = get_viewport_rect().size
 	var scaled_board_size = total_board_size * scale_factor
 	self.position = (viewport_size - scaled_board_size) / 2
 
-	# ✨ 부모(GameStage)에게 나 이 좌표에 이 크기로 배치 완료됨! 하고 알림
 	board_generated.emit(level_data.artifact_texture, self.position, scaled_board_size)
 
-	# 타일 하나당 크기는 원본 크기 그대로 유지
 	tile_size = Vector2(tex_size.x / level_data.grid_size.x, tex_size.y / level_data.grid_size.y)
 
-	# 보드 생성 후 자동으로 섞기 실행
 	for y in range(level_data.grid_size.y):
 		for x in range(level_data.grid_size.x):
 			var grid_pos = Vector2(x, y)
 			create_tile(grid_pos)
 			
-	# 보드 생성 완료 후 자동으로 섞기 실행
 	shuffle_board()
 
 func create_tile(grid_pos: Vector2):
@@ -63,24 +56,8 @@ func create_tile(grid_pos: Vector2):
 	add_child(tile)
 	
 	var region_rect = Rect2(grid_pos * tile_size, tile_size)
+	tile.setup(level_data.artifact_texture, region_rect, grid_pos, tile_size) # 픽스: 기믹 변수들 제거
 	
-	# ✨ 픽스 1. 장애물 여부 검사 (부동소수점 오차 완벽 차단)
-	var is_obs = false
-	for obs in level_data.obstacles:
-		if round(obs.x) == round(grid_pos.x) and round(obs.y) == round(grid_pos.y):
-			is_obs = true
-			break
-			
-	# ✨ 픽스 2. 단방향 타일 검사 (마찬가지로 오차 차단)
-	var dir = Vector2.ZERO
-	for key in level_data.directional_tiles.keys():
-		if round(key.x) == round(grid_pos.x) and round(key.y) == round(grid_pos.y):
-			dir = level_data.directional_tiles[key]
-			break
-	
-	tile.setup(level_data.artifact_texture, region_rect, grid_pos, tile_size, is_obs, dir)
-	
-	# ✨ 픽스 3. 앗차! 지난번에 빠졌던 타일 간격(Spacing) 복구
 	var step = tile_size + Vector2(tile_spacing, tile_spacing)
 	tile.position = grid_pos * step + (tile_size / 2)
 	
@@ -90,9 +67,8 @@ func create_tile(grid_pos: Vector2):
 # 🎮 입력 처리 (Input Handling)
 # ==========================================
 func _unhandled_input(event):
-	if is_locked: return # ✨ 추가: 잠겨있으면 입력 무시
+	if is_locked: return 
 
-	# 마우스 클릭 (모바일 환경의 터치도 Godot 설정에서 마우스로 에뮬레이트 가능)
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			var local_pos = get_local_mouse_position()
@@ -100,7 +76,6 @@ func _unhandled_input(event):
 		else:
 			end_drag()
 			
-	# 마우스(터치) 드래그 중
 	elif event is InputEventMouseMotion and is_dragging:
 		var local_pos = get_local_mouse_position()
 		continue_drag(local_pos)
@@ -111,17 +86,16 @@ func _unhandled_input(event):
 func start_drag(local_pos: Vector2):
 	var grid_pos = get_grid_pos_from_local(local_pos)
 	if not is_valid_grid_pos(grid_pos): return
-	if tiles[grid_pos].is_obstacle: return
 	
 	is_dragging = true
 	player_interacted.emit() 
 	
-	# ✨ 픽스: 잡은 타일이 마침 힌트 연타/반짝임 연출 중이었다면 즉시 강제 종료 및 초기화
-	if grid_pos == solution_start_pos and hint_action_tween and hint_action_tween.is_valid():
+	# ✨ 픽스: 좌표 비교가 아니라 '객체 자체'를 비교하여 가로채기
+	if tiles[grid_pos] == hint_target_tile and hint_action_tween and hint_action_tween.is_valid():
 		hint_action_tween.kill()
-		tiles[grid_pos].scale = Vector2(1.0, 1.0)
-		tiles[grid_pos].sprite.modulate = Color.WHITE
-		tiles[grid_pos].z_index = 0
+		hint_target_tile.scale = Vector2(1.0, 1.0)
+		hint_target_tile.sprite.modulate = Color.WHITE
+		hint_target_tile.z_index = 0
 	
 	path_stack.clear()
 	path_stack.append(grid_pos)
@@ -144,23 +118,15 @@ func continue_drag(local_pos: Vector2):
 	if grid_pos != last_pos:
 		var diff = grid_pos - last_pos
 		
-		# 1. 역방향 이동 (Undo) - 역방향은 방향 제약 무시하고 돌아갈 수 있어야 함
 		if path_stack.size() >= 2 and grid_pos == path_stack[path_stack.size() - 2]:
 			swap_tiles(last_pos, grid_pos)
 			path_stack.pop_back()
 			path_line.remove_point(path_line.get_points().size() - 1)
 			
-		# 2. 새로운 전진
 		elif abs(diff.x) + abs(diff.y) == 1:
 			var current_tile = tiles[last_pos]
 			
-			# ✨ 기믹 추가: 현재 타일에 단방향 제약이 있다면, 내가 이동하려는 방향(diff)과 일치하는지 검사
-			if current_tile.allowed_direction != Vector2.ZERO and diff != current_tile.allowed_direction:
-				shake_tile(current_tile) # 방향이 다르면 덜덜 흔들고 거부
-				return
-			
-			# 방문 타일이거나 장애물이면 진입 거부
-			if grid_pos in path_stack or tiles[grid_pos].is_obstacle:
+			if grid_pos in path_stack:
 				shake_tile(current_tile) 
 				return 
 				
@@ -178,16 +144,12 @@ func end_drag():
 	var last_pos = path_stack.back()
 	tiles[last_pos].z_index = 0
 	
-	# ✨ 드래그 종료 시 선 지우기 (원한다면 안 지우고 놔둬도 됩니다)
 	path_line.clear_points()
-	
-	# ✨ 정답 판정 실행
 	check_win_condition()
 
 # ==========================================
 # ✨ 쥬시니스 & 헬퍼 함수들
 # ==========================================
-# ✨ 수정: duration 매개변수 추가 (기본값 0.15초)
 func swap_tiles(pos1: Vector2, pos2: Vector2, duration: float = 0.15):
 	var tile1 = tiles[pos1]
 	var tile2 = tiles[pos2]
@@ -203,31 +165,25 @@ func swap_tiles(pos1: Vector2, pos2: Vector2, duration: float = 0.15):
 	
 	var tween = create_tween().set_parallel(true)
 	
-	# 1. 위치 이동 (기존 동일)
 	tween.tween_property(tile1, "position", target_pos1, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(tile2, "position", target_pos2, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	
-	# ✨ 2. 쥬시니스: 이동 시작 순간 타일을 10% 작게(0.9) 압축했다가
 	tile1.scale = Vector2(0.9, 0.9)
 	tile2.scale = Vector2(0.9, 0.9)
 	
-	# ✨ 3. 도착할 때 원래 크기(1.0)로 통통 튀며(BOUNCE) 복구
 	tween.tween_property(tile1, "scale", Vector2(1.0, 1.0), duration * 1.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 	tween.tween_property(tile2, "scale", Vector2(1.0, 1.0), duration * 1.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 
 func get_grid_pos_from_local(local_pos: Vector2) -> Vector2:
-	# ✨ 수정: 마우스 좌표를 인덱스로 바꿀 때 여백이 포함된 전체 타일 간격(Step)으로 나눔
 	var step = tile_size + Vector2(tile_spacing, tile_spacing)
 	var x = floor(local_pos.x / step.x)
 	var y = floor(local_pos.y / step.y)
 	return Vector2(x, y)
 
-# 좌표가 보드판(N x M) 안에 있는지 검사
 func is_valid_grid_pos(grid_pos: Vector2) -> bool:
 	return grid_pos.x >= 0 and grid_pos.x < level_data.grid_size.x and \
 		   grid_pos.y >= 0 and grid_pos.y < level_data.grid_size.y
 
-# ✨ 추가: 그리드 좌표를 입력받아 여백이 포함된 실제 화면상의 '중앙 좌표' 반환
 func get_center_pos_from_grid(grid_pos: Vector2) -> Vector2:
 	var step = tile_size + Vector2(tile_spacing, tile_spacing)
 	return grid_pos * step + (tile_size / 2)
@@ -244,7 +200,7 @@ func check_win_condition():
 			
 	if is_clear:
 		print("🎉 퍼즐 클리어! (유물 복원 성공)")
-		puzzle_cleared.emit() # ✨ UI를 끄기 위해 사령탑에 보고
+		puzzle_cleared.emit() 
 		play_clear_animation()
 	else:
 		print("❌ 오답입니다. (아직 섞여 있음)")
@@ -253,27 +209,20 @@ func check_win_condition():
 # ==========================================
 # ✨ 피드백 및 연출
 # ==========================================
-
-# 타일 거부 피드백 (좌우로 짧게 덜덜 흔들림)
 func shake_tile(tile: Tile):
-	# ✨ 핵심 픽스: 현재 위치(tile.position)가 아닌 '원래 있어야 할 정중앙 위치' 계산
 	var center_pos = get_center_pos_from_grid(tile.current_grid_pos)
 	var shake_offset = Vector2(8, 0)
 	
 	var tween = create_tween()
-	# 흔들기가 끝나면 무조건 격자의 정중앙(center_pos)에 안착합니다.
 	tween.tween_property(tile, "position", center_pos + shake_offset, 0.03)
 	tween.tween_property(tile, "position", center_pos - shake_offset, 0.06)
 	tween.tween_property(tile, "position", center_pos, 0.03)
 
-# 실패 시 초고속 되감기 시작
 func rollback_path():
-	is_locked = true # 플레이어 조작 잠금
+	is_locked = true 
 	_rollback_step()
 
-# 재귀적으로(연쇄적으로) 한 칸씩 역순환
 func _rollback_step():
-	# 돌아갈 경로가 없으면 잠금 해제 후 종료
 	if path_stack.size() <= 1:
 		is_locked = false
 		path_stack.clear()
@@ -283,14 +232,11 @@ func _rollback_step():
 	var curr_pos = path_stack.pop_back()
 	var prev_pos = path_stack.back()
 	
-	# 매우 빠른 속도(0.05초)로 스왑
 	swap_tiles(curr_pos, prev_pos, 0.05)
 	
-	# 궤적 선도 한 칸 지우기
 	if path_line.get_points().size() > 0:
 		path_line.remove_point(path_line.get_points().size() - 1)
 	
-	# 0.06초(스왑 시간 0.05초 + 여유 0.01초) 대기 후 다음 스텝 실행
 	get_tree().create_timer(0.06).timeout.connect(_rollback_step)
 
 # ==========================================
@@ -300,23 +246,17 @@ func play_clear_animation():
 	is_locked = true 
 	var tween = create_tween().set_parallel(true)
 	
-	# ✨ 픽스 1: 타일들이 스냅되면 틈새만큼 전체 크기가 줄어들어 좌측 상단으로 쏠립니다.
-	# 이를 방지하기 위해 틈새 절반만큼 보드판(self)을 우측 하단으로 밀어 화면 정중앙을 유지합니다!
 	var grid = level_data.grid_size
 	var total_spacing = Vector2((grid.x - 1) * tile_spacing, (grid.y - 1) * tile_spacing)
 	var target_board_pos = self.position + (total_spacing * self.scale) / 2.0
 	
 	tween.tween_property(self, "position", target_board_pos, 0.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	
-	# 1단계 [스냅 & 클렌징]
 	for pos in tiles.keys():
 		var tile = tiles[pos]
-		# 여백이 빠진 '순수 그림 위치'로 타일 이동
 		var target_pos = pos * tile_size + (tile_size / 2)
 		
 		tile.sprite.modulate = Color.WHITE 
-		tile.allowed_direction = Vector2.ZERO
-		tile.queue_redraw()
 		
 		tween.tween_property(tile, "position", target_pos, 0.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	
@@ -326,14 +266,10 @@ func _play_glow_and_bounce():
 	var tween = create_tween().set_parallel(true)
 	
 	var original_scale = self.scale
-	# ✨ 이전 단계에서 보정이 완료된 '현재 위치'를 기준으로 잡습니다.
 	var current_pos = self.position 
 	var bump_scale = original_scale * 1.05
 	
-	# ✨ 픽스 2: 이제 보드의 크기는 여백이 완전히 빠진 '순수 그림 크기'입니다.
 	var pure_tex_size = Vector2(tile_size.x * level_data.grid_size.x, tile_size.y * level_data.grid_size.y)
-	
-	# 순수 크기를 기준으로 커진 만큼만 좌표를 빼줍니다. (완벽한 중앙 줌인/아웃)
 	var pos_offset = (original_scale - bump_scale) * (pure_tex_size / 2.0)
 	var bump_pos = current_pos + pos_offset
 	
@@ -356,10 +292,13 @@ func shuffle_board():
 	var success = false
 	var attempts = 0
 	
+	# ✨ 픽스 1. 목표는 이론상 완벽한 최대치(전체 칸 수 - 1)로 당당하게 줍니다!
+	var total_tiles = level_data.grid_size.x * level_data.grid_size.y
+	var max_steps = int(total_tiles) - 1 
+	
 	while not success and attempts < 100:
 		attempts += 1
-		# ✨ 매니저의 변수 대신 level_data에서 셔플 횟수를 가져옵니다.
-		success = _try_generate_path(level_data.shuffle_steps) 
+		success = _try_generate_path(max_steps) 
 		
 	if not success:
 		print("경고: 완벽한 셔플 경로를 찾지 못했습니다.")
@@ -367,38 +306,40 @@ func shuffle_board():
 	_sync_visuals_instantly()
 	print("셔플 완료! (시도 횟수: ", attempts, ")")
 
-func _try_generate_path(steps: int) -> bool:
-	_reset_board_logic() # 리트라이를 위해 보드를 정답 상태로 초기화
+func _try_generate_path(max_steps: int) -> bool:
+	_reset_board_logic() 
 	
-	# 1. 무작위 시작점 찾기 (장애물이 아닌 곳)
-	var start_pos = _get_random_valid_pos()
-	var current_pos = start_pos
+	# ✨ 픽스 2. 성공 커트라인을 '전체 보드판 칸 수의 70%'로 쾅! 못 박습니다.
+	var total_tiles = level_data.grid_size.x * level_data.grid_size.y
+	var cut_line = int(total_tiles * 0.7) 
+	
+	var current_pos = Vector2(randi() % int(level_data.grid_size.x), randi() % int(level_data.grid_size.y))
 	var visited_path: Array[Vector2] = [current_pos]
 	
-	# 2. 한붓그리기로 역산하며 섞기
-	for i in range(steps):
+	for i in range(max_steps):
 		var neighbors = _get_unvisited_neighbors(current_pos, visited_path)
 		
-		# 막다른 길에 갇힌 경우 (Deadlock)
+		# 막다른 길(Deadlock)에 갇혔을 때
 		if neighbors.is_empty():
-			# 목표 스텝의 70% 이상 섞였으면 그냥 인정, 아니면 실패(리트라이)
-			return visited_path.size() >= (steps * 0.7)
+			hint_target_tile = tiles[current_pos] # 실패하든 성공하든 힌트는 무조건 박제
+			
+			# ✨ 픽스 3. 방문한 칸 수가 우리가 정한 절대 커트라인(70%)을 넘었는지만 봅니다.
+			if visited_path.size() >= cut_line:
+				return true
+			else:
+				return false
 			
 		var next_pos = neighbors.pick_random()
-		
-		# 논리적 스왑 (화면 이동 없이 데이터만 교환)
 		_swap_logic_only(current_pos, next_pos)
 		
 		visited_path.append(next_pos)
 		current_pos = next_pos
 		
-	solution_start_pos = current_pos
-
+	# 최대 스텝까지 갇히지 않고 완벽하게 도달했을 때
+	hint_target_tile = tiles[current_pos]
 	return true
 
 # --- 셔플용 헬퍼 함수들 ---
-
-# 보드를 무조건 정답(원본) 상태로 되돌림
 func _reset_board_logic():
 	var all_tiles = tiles.values()
 	tiles.clear()
@@ -406,26 +347,16 @@ func _reset_board_logic():
 		tile.current_grid_pos = tile.target_grid_pos
 		tiles[tile.target_grid_pos] = tile
 
-# 장애물이 아닌 무작위 타일 위치 반환
-func _get_random_valid_pos() -> Vector2:
-	var valid_positions = []
-	for pos in tiles.keys():
-		if not tiles[pos].is_obstacle:
-			valid_positions.append(pos)
-	return valid_positions.pick_random()
-
-# 현재 위치에서 이동 가능한(방문 안 했고, 장애물 아닌) 상하좌우 타일 목록 반환
 func _get_unvisited_neighbors(pos: Vector2, visited: Array[Vector2]) -> Array[Vector2]:
 	var neighbors: Array[Vector2] = []
 	var directions = [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]
 	
 	for dir in directions:
 		var next_pos = pos + dir
-		if is_valid_grid_pos(next_pos) and not tiles[next_pos].is_obstacle and not (next_pos in visited):
+		if is_valid_grid_pos(next_pos) and not (next_pos in visited):
 			neighbors.append(next_pos)
 	return neighbors
 
-# 애니메이션 없이 데이터만 즉각 교환
 func _swap_logic_only(pos1: Vector2, pos2: Vector2):
 	var tile1 = tiles[pos1]
 	var tile2 = tiles[pos2]
@@ -435,7 +366,6 @@ func _swap_logic_only(pos1: Vector2, pos2: Vector2):
 	tile1.current_grid_pos = pos2
 	tile2.current_grid_pos = pos1
 
-# 셔플이 다 끝난 후 화면상 좌표로 순간이동
 func _sync_visuals_instantly():
 	for pos in tiles.keys():
 		var tile = tiles[pos]
@@ -444,21 +374,17 @@ func _sync_visuals_instantly():
 # ==========================================
 # ✨ 힌트 기능: 정답 타일 반짝이기
 # ==========================================
-# ✨ 힌트 기능: 정답 타일 반짝이기 (연타 방지 적용)
 func highlight_hint_tile():
-	if not tiles.has(solution_start_pos): return
+	if not is_instance_valid(hint_target_tile): return
 	
-	# ✨ 연타 방지: 이미 반짝이는 중이면 무시!
 	if hint_action_tween and hint_action_tween.is_valid():
 		return
 		
-	var hint_tile = tiles[solution_start_pos]
-	
 	hint_action_tween = create_tween()
-	hint_tile.z_index = 20
-	hint_action_tween.tween_property(hint_tile.sprite, "modulate", Color.GOLD, 0.2)
-	hint_action_tween.tween_property(hint_tile, "scale", Vector2(1.1, 1.1), 0.2)
-	hint_action_tween.tween_property(hint_tile.sprite, "modulate", Color.WHITE, 0.2)
-	hint_action_tween.tween_property(hint_tile, "scale", Vector2(1.0, 1.0), 0.2)
+	hint_target_tile.z_index = 20
+	hint_action_tween.tween_property(hint_target_tile.sprite, "modulate", Color.GOLD, 0.2)
+	hint_action_tween.tween_property(hint_target_tile, "scale", Vector2(1.1, 1.1), 0.2)
+	hint_action_tween.tween_property(hint_target_tile.sprite, "modulate", Color.WHITE, 0.2)
+	hint_action_tween.tween_property(hint_target_tile, "scale", Vector2(1.0, 1.0), 0.2)
 	hint_action_tween.set_loops(3)
-	hint_action_tween.finished.connect(func(): hint_tile.z_index = 0)
+	hint_action_tween.finished.connect(func(): hint_target_tile.z_index = 0)
