@@ -1,27 +1,55 @@
 [gd_scene format=3 uid="uid://x7i2hjtxhrm"]
 
 [ext_resource type="Script" uid="uid://c88plttbdu41g" path="res://Scripts/ui_manager.gd" id="1_nphyr"]
+[ext_resource type="Script" uid="uid://ccerposaxmdk8" path="res://Scripts/DraggableOverlay.gd" id="2_blom3"]
 
-[node name="UIManager" type="CanvasLayer" unique_id=135384159]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_blom3"]
+bg_color = Color(0.050980393, 0.105882354, 0.16470589, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.83137256, 0.6862745, 0.21568628, 1)
+corner_radius_top_left = 1
+corner_radius_top_right = 1
+corner_radius_bottom_right = 1
+corner_radius_bottom_left = 1
+
+[node name="UIManager" type="CanvasLayer" unique_id=1798934135]
 script = ExtResource("1_nphyr")
 
-[node name="TargetOverlay" type="TextureRect" parent="." unique_id=565442220]
+[node name="TargetOverlay" type="TextureRect" parent="." unique_id=375141001]
+unique_name_in_owner = true
 offset_right = 40.0
 offset_bottom = 40.0
-mouse_filter = 2
+mouse_filter = 0
+script = ExtResource("2_blom3")
 
-[node name="BtnView" type="Button" parent="." unique_id=1788787248]
-offset_right = 8.0
-offset_bottom = 8.0
+[node name="InGameButtons" type="VBoxContainer" parent="." unique_id=781692848]
+offset_left = 30.0
+offset_top = 30.0
+offset_right = 230.0
+offset_bottom = 200.0
+theme_override_constants/separation = 15
+
+[node name="BtnView" type="Button" parent="InGameButtons" unique_id=1795918447]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_blom3")
 text = "원본 보기"
 
-[node name="BtnHint" type="Button" parent="." unique_id=1971294187]
-offset_top = 35.0
-offset_right = 40.0
-offset_bottom = 66.0
-text = "힌트"
+[node name="BtnHint" type="Button" parent="InGameButtons" unique_id=1175839380]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_blom3")
+text = "힌 트"
 
-[node name="ResultPanel" type="Control" parent="." unique_id=2090521726]
+[node name="ResultPanel" type="Control" parent="." unique_id=1872643371]
+unique_name_in_owner = true
 visible = false
 layout_mode = 3
 anchors_preset = 15
@@ -30,41 +58,78 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="ColorRect" type="ColorRect" parent="ResultPanel" unique_id=669185494]
+[node name="ColorRect" type="ColorRect" parent="ResultPanel" unique_id=41813555]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-pivot_offset = Vector2(870, 974)
-color = Color(0, 0, 0, 0.5882353)
+color = Color(0.08, 0.08, 0.08, 0.92)
 
-[node name="ResultLabel" type="Label" parent="ResultPanel" unique_id=1277600777]
+[node name="CenterContainer" type="CenterContainer" parent="ResultPanel" unique_id=72307412]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -54.5
-offset_top = -11.5
-offset_right = 54.5
-offset_bottom = 11.5
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "유물 복원 성공!"
 
-[node name="BtnNextStage" type="Button" parent="ResultPanel" unique_id=1233727500]
+[node name="HBoxContainer" type="HBoxContainer" parent="ResultPanel/CenterContainer" unique_id=1627332463]
+layout_mode = 2
+theme_override_constants/separation = 70
+
+[node name="ImageFrame" type="ColorRect" parent="ResultPanel/CenterContainer/HBoxContainer" unique_id=298180681]
+unique_name_in_owner = true
+layout_mode = 2
+color = Color(0.18, 0.18, 0.18, 1)
+
+[node name="ResultTexture" type="TextureRect" parent="ResultPanel/CenterContainer/HBoxContainer/ImageFrame" unique_id=920572901]
+unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
+anchors_preset = 15
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -72.5
-offset_top = -31.0
-offset_right = 72.5
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
 grow_horizontal = 2
-grow_vertical = 0
+grow_vertical = 2
+expand_mode = 1
+
+[node name="InfoContainer" type="VBoxContainer" parent="ResultPanel/CenterContainer/HBoxContainer" unique_id=819516531]
+layout_mode = 2
+theme_override_constants/separation = 22
+alignment = 1
+
+[node name="ArtifactNameLabel" type="Label" parent="ResultPanel/CenterContainer/HBoxContainer/InfoContainer" unique_id=2011011994]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+text = "유물명: 기본 민화"
+
+[node name="CollectionLabel" type="Label" parent="ResultPanel/CenterContainer/HBoxContainer/InfoContainer" unique_id=1566506705]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 22
+text = "소장처: 행소박물관"
+
+[node name="ClearTimeLabel" type="Label" parent="ResultPanel/CenterContainer/HBoxContainer/InfoContainer" unique_id=195248351]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93, 0.74, 0.25, 1)
+theme_override_font_sizes/font_size = 26
+text = "복원 시간: 00분 00초"
+
+[node name="Spacer" type="Control" parent="ResultPanel/CenterContainer/HBoxContainer/InfoContainer" unique_id=68887195]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+
+[node name="BtnNextStage" type="Button" parent="ResultPanel/CenterContainer/HBoxContainer/InfoContainer" unique_id=967762905]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 65)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
 text = "다음 유물 복원하기"
