@@ -51,10 +51,10 @@ func _on_puzzle_cleared():
 func _on_next_stage_requested():
 	if GlobalData.is_last_level():
 		GlobalData.current_level_index = 0
-		get_tree().change_scene_to_file("res://Scenes/MainMenu.tscn")
+		TransitionManager.change_scene("res://Scenes/MainMenu.tscn") # 메인 메뉴로 돌아가기
 	else:
 		GlobalData.next_level()
-		get_tree().reload_current_scene()
+		TransitionManager.reload_scene() # 다음 스테이지
 
 func _on_hint_timer_timeout():
 	is_hint_unlocked = true 

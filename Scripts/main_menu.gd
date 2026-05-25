@@ -6,4 +6,4 @@ func _ready():
 	btn_start.pressed.connect(_on_start_pressed)
 
 func _on_start_pressed():
-	get_tree().change_scene_to_file("res://Scenes/LoreScreen.tscn")
+	TransitionManager.change_scene("res://Scenes/LoreScreen.tscn")
