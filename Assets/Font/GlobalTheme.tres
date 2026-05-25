@@ -1,0 +1,6 @@
+[gd_resource type="Theme" format=3 uid="uid://kr2exdplo6pt"]
+
+[ext_resource type="FontFile" uid="uid://7ig2jndr7i3i" path="res://Assets/Font/RIDIBatang.otf" id="1_dcmhf"]
+
+[resource]
+default_font = ExtResource("1_dcmhf")

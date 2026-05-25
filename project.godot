@@ -25,6 +25,10 @@ TransitionManager="*uid://cvf2r4ckxpfsw"
 window/size/viewport_width=1920
 window/size/viewport_height=1080
 
+[gui]
+
+theme/custom="uid://kr2exdplo6pt"
+
 [physics]
 
 3d/physics_engine="Jolt Physics"
