@@ -71,6 +71,26 @@ func _reset_idle_timer():
 
 func _on_board_generated(texture: Texture2D, pos: Vector2, size: Vector2):
 	ui_manager.setup_overlay(texture, pos, size)
+	
+	# ==========================================
+	# ✨ 배경 스포트라이트(비네팅) 셰이더 데이터 주입
+	# ==========================================
+	# 1. 셰이더를 컨트롤할 Vignette 노드 가져오기
+	var vignette = $BackgroundLayer/Vignette 
+	
+	# 2. 현재 화면의 실제 해상도 크기 구하기
+	var screen_size = get_viewport().get_visible_rect().size
+	
+	# 3. 보드판의 실제 화면상 좌상단 시작점(Position)과 가로세로 크기(Size) 계산
+	var puzzle_size = size 
+	var puzzle_pos = pos
+	
+	# 4. 셰이더 매니저에게 실시간으로 데이터 주입하기
+	var mat = vignette.material as ShaderMaterial
+	if mat:
+		mat.set_shader_parameter("screen_size", screen_size)
+		mat.set_shader_parameter("puzzle_size", puzzle_size)
+		mat.set_shader_parameter("puzzle_pos", puzzle_pos)
 
 func _on_hint_pressed():
 	board_manager.highlight_hint_tile()

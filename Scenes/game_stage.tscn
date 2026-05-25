@@ -2,16 +2,50 @@
 
 [ext_resource type="Script" uid="uid://daamrxrqut4cv" path="res://Scripts/game_stage.gd" id="1_lqrsd"]
 [ext_resource type="PackedScene" uid="uid://dbab000eqcijr" path="res://Scenes/board_manager.tscn" id="1_vihmk"]
+[ext_resource type="Shader" uid="uid://b3dbnaex68hu8" path="res://Scenes/Light.gdshader" id="2_71nqb"]
+[ext_resource type="Texture2D" uid="uid://8ww7ql12sinq" path="res://Assets/BG1.png" id="2_cseqv"]
 [ext_resource type="PackedScene" uid="uid://x7i2hjtxhrm" path="res://Scenes/ui_manager.tscn" id="2_lqrsd"]
 
-[node name="GameStage" type="Node2D" unique_id=507830966]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cseqv"]
+shader = ExtResource("2_71nqb")
+shader_parameter/puzzle_pos = Vector2(0, 0)
+shader_parameter/puzzle_size = Vector2(0, 0)
+shader_parameter/screen_size = Vector2(0, 0)
+shader_parameter/padding = 15.0
+shader_parameter/softness = 20.0
+shader_parameter/dark_color = Color(0.04, 0.04, 0.06, 0.85)
+
+[node name="GameStage" type="Node2D" unique_id=389621647]
 script = ExtResource("1_lqrsd")
 
-[node name="BoardManager" parent="." unique_id=2063133726 instance=ExtResource("1_vihmk")]
+[node name="BackgroundLayer" type="CanvasLayer" parent="." unique_id=548953629]
+layer = -10
 
-[node name="UIManager" parent="." unique_id=135384159 instance=ExtResource("2_lqrsd")]
+[node name="BackgroundTexture" type="TextureRect" parent="BackgroundLayer" unique_id=1007074116]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_cseqv")
+expand_mode = 1
+stretch_mode = 6
 
-[node name="HintTimer" type="Timer" parent="." unique_id=1980069744]
+[node name="Vignette" type="ColorRect" parent="BackgroundLayer" unique_id=858848960]
+material = SubResource("ShaderMaterial_cseqv")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="BoardManager" parent="." unique_id=1882101655 instance=ExtResource("1_vihmk")]
+
+[node name="UIManager" parent="." unique_id=1963262847 instance=ExtResource("2_lqrsd")]
+
+[node name="HintTimer" type="Timer" parent="." unique_id=347244164]
 wait_time = 15.0
 one_shot = true
 autostart = true
