@@ -93,26 +93,11 @@ func show_result_ui(level_data: LevelData, time_in_seconds: float, is_last: bool
 		
 	# 테두리 여백(24픽셀)을 더해 액자의 최소 크기를 강제로 지정합니다.
 	image_frame.custom_minimum_size = dynamic_size + Vector2(24, 24)
-	# --------------------------------------------------------
 	
 	result_panel.show()
 	result_panel.modulate.a = 0
 	create_tween().tween_property(result_panel, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
-func play_hint_button_pulse():
-	if hint_tween and hint_tween.is_valid():
-		return
-	btn_hint.disabled = false 
-	
-	hint_tween = create_tween().set_loops()
-	hint_tween.tween_property(btn_hint, "modulate", Color.GOLD, 0.5)
-	hint_tween.tween_property(btn_hint, "modulate", Color.WHITE, 0.5)
-
-func reset_hint_button():
-	if hint_tween and hint_tween.is_valid():
-		hint_tween.kill()
-	btn_hint.disabled = true
-	btn_hint.modulate = Color(1, 1, 1, 0.5)
 
 # ✨ 픽스: 클리어 시 인게임 버튼들과 함께 '원본보기' 팝업도 싹 청소
 func disable_all_buttons():
@@ -134,3 +119,32 @@ func disable_all_buttons():
 		btn_view.hide()
 		btn_hint.hide()
 	)
+
+# ==========================================
+# ✨ 추가: 힌트 쿨타임 텍스트 업데이트 함수
+# ==========================================
+func update_hint_cooldown(time_left: float):
+	if time_left > 0:
+		var seconds = int(ceil(time_left)) # 올림 처리해서 깔끔한 정수로 표시
+		btn_hint.text = "힌 트 (" + str(seconds) + ")"
+	else:
+		btn_hint.text = "힌 트"
+
+# 힌트 준비 완료 시 연출
+func play_hint_button_pulse():
+	if hint_tween and hint_tween.is_valid():
+		return
+	btn_hint.disabled = false 
+	btn_hint.text = "힌 트" # ✨ 쿨타임 끝나면 텍스트 원상복구
+	
+	hint_tween = create_tween().set_loops()
+	hint_tween.tween_property(btn_hint, "modulate", Color.GOLD, 0.5)
+	hint_tween.tween_property(btn_hint, "modulate", Color.WHITE, 0.5)
+
+# 힌트 초기화
+func reset_hint_button():
+	if hint_tween and hint_tween.is_valid():
+		hint_tween.kill()
+	btn_hint.disabled = true
+	btn_hint.modulate = Color(1, 1, 1, 0.5)
+	btn_hint.text = "힌 트" # ✨ 초기화할 때도 텍스트 원상복구

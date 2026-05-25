@@ -33,10 +33,12 @@ func _ready():
 
 	board_manager.generate_board()
 
-# ✨ 중요: 이제 UI 렌더링을 건드리지 않고, 내부 숫지만 순수하게 카운트합니다.
 func _process(delta: float):
 	if is_game_active:
 		elapsed_time += delta
+		
+		if not is_hint_unlocked and not hint_timer.is_stopped():
+			ui_manager.update_hint_cooldown(hint_timer.time_left)
 
 func _on_puzzle_cleared():
 	# ✨ 클리어 순간 초시계 즉시 정지
