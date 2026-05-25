@@ -5,6 +5,8 @@
 
 [resource]
 script = ExtResource("1_keyiu")
+level_name = "모란도 병풍 (牡丹圖屛風)"
+collection_place = "국립고궁박물관"
 artifact_texture = ExtResource("1_f43ww")
 grid_size = Vector2(5, 5)
 shuffle_steps = 25

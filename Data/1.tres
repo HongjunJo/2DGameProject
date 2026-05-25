@@ -5,6 +5,8 @@
 
 [resource]
 script = ExtResource("2_2okrl")
+level_name = "호랑이와 까치 (鵲虎圖)"
+collection_place = "국립중앙박물관"
 artifact_texture = ExtResource("1_rx3rm")
 shuffle_steps = 8
 metadata/_custom_type_script = "uid://dq8uf0uuh8r06"

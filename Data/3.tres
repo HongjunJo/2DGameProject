@@ -5,6 +5,8 @@
 
 [resource]
 script = ExtResource("1_qxqko")
+level_name = "정선필 인왕제색도 (鄭敾筆仁王霽色圖)"
+collection_place = "국립중앙박물관"
 artifact_texture = ExtResource("1_3avxv")
 grid_size = Vector2(4, 4)
 shuffle_steps = 16

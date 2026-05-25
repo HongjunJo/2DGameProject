@@ -61,7 +61,7 @@ func _toggle_overlay():
 # ==========================================
 func show_result_ui(level_data: LevelData, time_in_seconds: float, is_last: bool):
 	result_texture.texture = level_data.artifact_texture
-	artifact_name_label.text = "유물명: " + level_data.level_name
+	artifact_name_label.text = level_data.level_name
 	collection_label.text = "소장처: " + level_data.collection_place
 	
 	var minutes = int(time_in_seconds) / 60

@@ -5,6 +5,8 @@
 
 [resource]
 script = ExtResource("1_x5vn3")
+level_name = "책가도 (冊架圖)"
+collection_place = "국립중앙박물관"
 artifact_texture = ExtResource("1_xfdd3")
 grid_size = Vector2(4, 3)
 shuffle_steps = 12
