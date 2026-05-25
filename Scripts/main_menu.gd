@@ -1,6 +1,6 @@
 extends Control
 
-@onready var btn_start: Button = $BtnStart
+@onready var btn_start = %BtnStart
 
 func _ready():
 	btn_start.pressed.connect(_on_start_pressed)

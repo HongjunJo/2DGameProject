@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://jjnpmj1mgwmv" path="res://Scripts/lore_screen.gd" id="1_i7spq"]
 
-[node name="LoreScreen" type="Control" unique_id=353427937]
+[node name="LoreScreen" type="Control" unique_id=85533245]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,31 +11,48 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_i7spq")
 
-[node name="Label" type="Label" parent="." unique_id=2126014945]
+[node name="Background" type="ColorRect" parent="." unique_id=1214188858]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -56.0
-offset_top = -11.5
-offset_right = 56.0
-offset_bottom = 11.5
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "대충엄청난로어"
+color = Color(0, 0, 0, 1)
 
-[node name="BtnNext" type="Button" parent="." unique_id=416112217]
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=1219927932]
 layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
+anchors_preset = 15
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -38.0
-offset_top = -31.0
-offset_right = 39.0
 grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LoreLabel" type="Label" parent="CenterContainer" unique_id=1710214306]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/line_spacing = 15
+theme_override_font_sizes/font_size = 28
+text = "당신은 오랜 역사를 간직한 박물관의 유물 복원가입니다.
+긴 세월을 거치며 빛을 잃고 조각난 옛 그림들...
+당신의 손길로 흩어진 조각들을 제자리에 맞추어,
+작품이 품은 원래의 아름다움을 세상에 다시 선보여 주십시오."
+horizontal_alignment = 1
+
+[node name="BtnNext" type="Button" parent="." unique_id=885689905]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 60)
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -270.0
+offset_top = -110.0
+offset_right = -50.0
+offset_bottom = -50.0
+grow_horizontal = 0
 grow_vertical = 0
-text = "복원 시작"
+theme_override_font_sizes/font_size = 24
+text = "작업실 입장"
