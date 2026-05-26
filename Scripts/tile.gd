@@ -25,6 +25,11 @@ func setup(texture: Texture2D, region_rect: Rect2, grid_pos: Vector2, tile_size:
 
 func _on_mouse_entered():
 	var board = get_parent() as BoardManager
+
+	# "보드판에 얼려진 타일이 존재하는가?"를 검사합니다.
+	if board and board.frozen_piece != null:
+		return
+
 	if board and (board.is_locked or board.is_dragging):
 		return
 		
@@ -37,6 +42,11 @@ func _on_mouse_entered():
 
 func _on_mouse_exited():
 	var board = get_parent() as BoardManager
+	
+	# 누군가 얼려져 있다면 작아지는(축소) 연출도 전면 차단합니다.
+	if board and board.frozen_piece != null:
+		return
+
 	if board and board.is_locked: 
 		return
 		

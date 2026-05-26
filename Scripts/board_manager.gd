@@ -21,6 +21,7 @@ var current_mouse_grid_pos: Vector2 = Vector2(-1, -1)
 var hint_target_tile: Tile # ✨ 픽스: 좌표(Vector2)가 아니라 타일 객체(Tile) 자체를 기억합니다!
 var hint_action_tween: Tween 
 var board_base_size: Vector2 
+var frozen_piece: Node2D = null
 
 func generate_board():
 	var tex_size = level_data.artifact_texture.get_size()
@@ -69,13 +70,56 @@ func create_tile(grid_pos: Vector2):
 func _unhandled_input(event):
 	if is_locked: return 
 
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			var local_pos = get_local_mouse_position()
-			start_drag(local_pos)
-		else:
-			end_drag()
-			
+	if event is InputEventMouseButton:
+		var local_pos = get_local_mouse_position()
+		var grid_pos = get_grid_pos_from_local(local_pos)
+
+		# ==========================================
+		# ✨ 1. 우클릭 (MOUSE_BUTTON_RIGHT) 무조건 1순위 전역 제어
+		# ==========================================
+		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			# [언락] 얼려진 조각이 있다면, 마우스가 화면 어디에 있든 즉시 해제!
+			if frozen_piece != null:
+				_unfreeze_tile(frozen_piece)
+				check_win_condition()
+				return 
+				
+			# [잠금] 드래그 중이라면, 마우스가 화면 어디에 있든 '현재 쥐고 있는 조각'을 락온!
+			if is_dragging and path_stack.size() > 0:
+				var holding_pos = path_stack.back() # 들고 있던 조각의 그리드 위치
+				if tiles.has(holding_pos):
+					_freeze_tile(tiles[holding_pos])
+				return
+
+		# ==========================================
+		# ✨ 2. 보드판 외곽 예외 처리 (우클릭 통과 후 좌클릭만 검사)
+		# ==========================================
+		if not is_valid_grid_pos(grid_pos):
+			if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+				end_drag()
+			return
+
+		var clicked_tile = tiles[grid_pos]
+
+		# ==========================================
+		# ✨ 3. 좌클릭 (MOUSE_BUTTON_LEFT) 제어
+		# ==========================================
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				if frozen_piece != null:
+					if frozen_piece == clicked_tile:
+						_unfreeze_tile(clicked_tile)
+						is_dragging = true
+						current_mouse_grid_pos = grid_pos
+						clicked_tile.z_index = 10
+					else:
+						return
+				else:
+					start_drag(local_pos)
+			else:
+				if is_dragging:
+					end_drag()
+				
 	elif event is InputEventMouseMotion and is_dragging:
 		var local_pos = get_local_mouse_position()
 		continue_drag(local_pos)
@@ -146,6 +190,29 @@ func end_drag():
 	
 	path_line.clear_points()
 	check_win_condition()
+
+# ==========================================
+# ✨ 프리즈 헬퍼 함수 (크기 복구 추가)
+# ==========================================
+func _freeze_tile(tile: Tile):
+	is_dragging = false
+	frozen_piece = tile
+	
+	var snap_pos = get_center_pos_from_grid(tile.current_grid_pos)
+	tile.position = snap_pos
+	
+	tile.scale = Vector2(1.1, 1.1)
+	tile.sprite.modulate = Color(0.65, 0.85, 1.0, 1.0)
+	tile.z_index = 5
+
+func _unfreeze_tile(tile: Tile):
+	frozen_piece = null
+	tile.sprite.modulate = Color.WHITE
+	tile.z_index = 0
+	
+	# ✨ 픽스: 마우스가 화면 밖(허공)에서 우클릭으로 해제될 수 있으므로, 락이 풀리면 무조건 원래 크기(1.0)로 돌려줍니다.
+	var tween = create_tween()
+	tween.tween_property(tile, "scale", Vector2(1.0, 1.0), 0.1)
 
 # ==========================================
 # ✨ 쥬시니스 & 헬퍼 함수들
@@ -372,7 +439,7 @@ func _sync_visuals_instantly():
 		tile.position = get_center_pos_from_grid(pos)
 
 # ==========================================
-# ✨ 힌트 기능: 정답 타일 반짝이기
+# ✨ 힌트 기능: 정답 타일 반짝이기 (상태 보존형)
 # ==========================================
 func highlight_hint_tile():
 	if not is_instance_valid(hint_target_tile): return
@@ -382,9 +449,26 @@ func highlight_hint_tile():
 		
 	hint_action_tween = create_tween()
 	hint_target_tile.z_index = 20
+	
+	# ✨ 힌트 연출이 끝난 뒤 돌아갈 '원래 상태'를 미리 변수에 세팅
+	var target_color = Color.WHITE
+	var target_scale = Vector2(1.0, 1.0)
+	var target_z_index = 0
+	
+	# 만약 힌트를 보여줄 타일이 현재 얼려져(프리즈) 있다면?
+	if frozen_piece == hint_target_tile:
+		target_color = Color(0.65, 0.85, 1.0, 1.0) # 프리즈 전용 푸른빛
+		target_scale = Vector2(1.1, 1.1)           # 프리즈 전용 1.1 스케일
+		target_z_index = 5
+	
+	# 반짝임 연출 (가장 커질 때는 프리즈보다 더 큰 1.2로 튀어 오르게 설정)
 	hint_action_tween.tween_property(hint_target_tile.sprite, "modulate", Color.GOLD, 0.2)
-	hint_action_tween.tween_property(hint_target_tile, "scale", Vector2(1.1, 1.1), 0.2)
-	hint_action_tween.tween_property(hint_target_tile.sprite, "modulate", Color.WHITE, 0.2)
-	hint_action_tween.tween_property(hint_target_tile, "scale", Vector2(1.0, 1.0), 0.2)
-	hint_action_tween.set_loops(3)
-	hint_action_tween.finished.connect(func(): hint_target_tile.z_index = 0)
+	hint_action_tween.tween_property(hint_target_tile, "scale", Vector2(1.2, 1.2), 0.2)
+	
+	# 연출이 한 턴 끝날 때 지정해둔 target 상태로 복귀
+	hint_action_tween.tween_property(hint_target_tile.sprite, "modulate", target_color, 0.2)
+	hint_action_tween.tween_property(hint_target_tile, "scale", target_scale, 0.2)
+	
+	hint_action_tween.set_loops(3) # 3번 반복
+	hint_action_tween.finished.connect(func(): hint_target_tile.z_index = target_z_index)
+
