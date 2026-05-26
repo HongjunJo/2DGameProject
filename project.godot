@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 GlobalData="*uid://7emof3e66juj"
 TransitionManager="*uid://cvf2r4ckxpfsw"
+SoundManager="*uid://cyxqye0p303yh"
 
 [display]
 

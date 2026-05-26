@@ -31,7 +31,9 @@ func _ready():
 
 	reset_hint_button()
 
-# ✨ 픽스: 원본 보기 위치를 화면 좌측 하단 정렬 공식
+# ==========================================
+# ✨ 원본보기 오버레이 설정 함수 (위치와 크기 동적 조절)
+# ==========================================
 func setup_overlay(texture: Texture2D, _board_pos: Vector2, scaled_size: Vector2):
 	target_overlay.texture = texture
 	target_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -49,7 +51,14 @@ func setup_overlay(texture: Texture2D, _board_pos: Vector2, scaled_size: Vector2
 	)
 	
 	target_overlay.reset_transform(left_bottom_pos, scaled_size)
+
+# ==========================================
+# ✨ 원본보기 오버레이 토글 함수
+# ==========================================
 func _toggle_overlay():
+	# 클릭 사운드 재생
+	SoundManager.play_sfx(SoundManager.SFX.UI_CLICK)
+
 	is_overlay_open = !is_overlay_open
 	if is_overlay_open:
 		target_overlay.show()
@@ -66,7 +75,7 @@ func show_result_ui(level_data: LevelData, time_in_seconds: float, is_last: bool
 	
 	var minutes = int(time_in_seconds) / 60
 	var seconds = int(time_in_seconds) % 60
-	clear_time_label.text = "복원 시간: %02d분 %02d초" % [minutes, seconds]
+	clear_time_label.text = "복원 소요 시간: %02d분 %02d초" % [minutes, seconds]
 	
 	if is_last:
 		btn_next_stage.text = "모든 유물 복원 완료 (메인으로)"
@@ -136,7 +145,9 @@ func play_hint_button_pulse():
 		return
 	btn_hint.disabled = false 
 	btn_hint.text = "힌 트" # ✨ 쿨타임 끝나면 텍스트 원상복구
-	
+
+	SoundManager.play_sfx(SoundManager.SFX.HINT, false, 0.0, 0.8)
+
 	hint_tween = create_tween().set_loops()
 	hint_tween.tween_property(btn_hint, "modulate", Color.GOLD, 0.5)
 	hint_tween.tween_property(btn_hint, "modulate", Color.WHITE, 0.5)

@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://cyxqye0p303yh"]
+
+[ext_resource type="Script" uid="uid://dk5dcj6orh5dx" path="res://Scripts/SoundManager.gd" id="1_25ke0"]
+[ext_resource type="AudioStream" uid="uid://2j5wdu6tn7sj" path="res://Assets/SFX/BGM.mp3" id="2_1ohty"]
+[ext_resource type="AudioStream" uid="uid://dpc5unlpyrfiy" path="res://Assets/SFX/TileClick.mp3" id="3_ptd6l"]
+[ext_resource type="AudioStream" uid="uid://bgqo1ifbxdms5" path="res://Assets/SFX/Slide.mp3" id="4_lw6xy"]
+[ext_resource type="AudioStream" uid="uid://qhsgx5iqytgi" path="res://Assets/SFX/Freeze.mp3" id="5_rqs6t"]
+[ext_resource type="AudioStream" uid="uid://bqukfh4g750dl" path="res://Assets/SFX/Hint.mp3" id="6_h0di3"]
+[ext_resource type="AudioStream" uid="uid://b7gyi6ttnefra" path="res://Assets/SFX/UnFreeze.mp3" id="6_n5cwv"]
+[ext_resource type="AudioStream" uid="uid://c7ignlgkr7jnf" path="res://Assets/SFX/Fail.wav" id="7_n5cwv"]
+[ext_resource type="AudioStream" uid="uid://b1jps7k0ewf1f" path="res://Assets/SFX/Clear.mp3" id="8_w8ulo"]
+[ext_resource type="AudioStream" uid="uid://cphqlr8vvheso" path="res://Assets/SFX/Button.mp3" id="9_sojss"]
+[ext_resource type="AudioStream" uid="uid://b7ixhfy00tiyk" path="res://Assets/SFX/Typing.mp3" id="10_lw6xy"]
+
+[node name="SoundManager" type="Node" unique_id=1702946869]
+script = ExtResource("1_25ke0")
+bgm_clips = Array[AudioStream]([ExtResource("2_1ohty")])
+sfx_clips = Array[AudioStream]([ExtResource("3_ptd6l"), ExtResource("4_lw6xy"), ExtResource("5_rqs6t"), ExtResource("6_n5cwv"), ExtResource("6_h0di3"), ExtResource("7_n5cwv"), ExtResource("8_w8ulo"), ExtResource("9_sojss"), ExtResource("10_lw6xy")])

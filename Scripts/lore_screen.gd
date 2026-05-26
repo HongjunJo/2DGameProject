@@ -18,6 +18,8 @@ func start_typewriter_effect():
 	lore_label.visible_characters = 0
 	type_tween = create_tween()
 	
+	SoundManager.play_sfx(SoundManager.SFX.TYPING, false, 0.0, 1.0) # 타이핑 사운드 재생
+
 	# 텍스트를 줄바꿈(\n) 기준으로 통째로 쪼갭니다.
 	var lines = lore_label.text.split("\n")
 	var accumulated_chars = 0
@@ -49,6 +51,8 @@ func _on_type_finished():
 	is_typing = false
 	lore_label.visible_characters = -1 # -1은 '모든 글자 표시'를 뜻하는 엔진의 안전장치입니다.
 	
+	SoundManager.stop_sfx(SoundManager.SFX.TYPING) # 타이핑 사운드가 아직 재생 중이라면 즉시 정지
+
 	# 버튼이 그냥 띡! 나타나는 것보다 페이드인으로 스르륵 나타나는 게 더 예쁩니다.
 	next_button.modulate.a = 0
 	next_button.show()
@@ -64,4 +68,6 @@ func _input(event):
 			_on_type_finished()
 
 func _on_next_pressed():
+	SoundManager.stop_sfx(SoundManager.SFX.TYPING)
+	SoundManager.play_sfx(SoundManager.SFX.UI_CLICK)
 	TransitionManager.change_scene("res://Scenes/game_stage.tscn")

@@ -134,6 +134,8 @@ func start_drag(local_pos: Vector2):
 	is_dragging = true
 	player_interacted.emit() 
 	
+	SoundManager.play_sfx(SoundManager.SFX.GRAB)
+
 	# ✨ 픽스: 좌표 비교가 아니라 '객체 자체'를 비교하여 가로채기
 	if tiles[grid_pos] == hint_target_tile and hint_action_tween and hint_action_tween.is_valid():
 		hint_action_tween.kill()
@@ -202,6 +204,9 @@ func _freeze_tile(tile: Tile):
 	is_dragging = false
 	frozen_piece = tile
 	
+	# 얼리는 순간 즉시 효과음 재생
+	SoundManager.play_sfx(SoundManager.SFX.FREEZE, false, 0.0, 0.6)
+
 	var snap_pos = get_center_pos_from_grid(tile.current_grid_pos)
 	tile.position = snap_pos
 	
@@ -212,12 +217,14 @@ func _freeze_tile(tile: Tile):
 	var border = tile.get_node("HighlightBorder")
 	border.border_color = Color(0.3, 0.6, 1.0, 1.0) # 파란색 테두리로 락온 표시
 	border.show()
-	
+
 	tile.z_index = 5
 
 func _unfreeze_tile(tile: Tile):
 	frozen_piece = null
 	
+	SoundManager.play_sfx(SoundManager.SFX.UNFREEZE, false, 0.0, 0.6)
+
 	tile.sprite.modulate = Color.WHITE
 	tile.get_node("HighlightBorder").hide()
 	tile.z_index = 0
@@ -244,12 +251,16 @@ func swap_tiles(pos1: Vector2, pos2: Vector2, duration: float = 0.15):
 	tween.tween_property(tile2, "position", target_pos2, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	
 	if tile1.z_index >= 10:
+		# 스왑 소리 재생
+		SoundManager.play_sfx(SoundManager.SFX.SWAP, false, 0.15, 0.7)
 		tween.tween_property(tile1, "scale", Vector2(1.05, 1.05), duration) 
 	else:
 		tile1.scale = Vector2(0.9, 0.9) 
 		tween.tween_property(tile1, "scale", Vector2(1.0, 1.0), duration * 1.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 
 	if tile2.z_index >= 10:
+		# 스왑 소리 재생
+		SoundManager.play_sfx(SoundManager.SFX.SWAP, false, 0.15, 0.7)
 		tween.tween_property(tile2, "scale", Vector2(1.05, 1.05), duration) 
 	else:
 		tile2.scale = Vector2(0.9, 0.9) 
@@ -280,10 +291,12 @@ func check_win_condition():
 			break
 			
 	if is_clear:
+		SoundManager.play_sfx(SoundManager.SFX.CLEAR, true, 0.0, 1.2)
 		print("🎉 퍼즐 클리어! (유물 복원 성공)")
 		puzzle_cleared.emit() 
 		play_clear_animation()
 	else:
+		SoundManager.play_sfx(SoundManager.SFX.FAIL, false, 0.0, 0.7)
 		print("❌ 오답입니다. (아직 섞여 있음)")
 		rollback_path()
 
@@ -321,10 +334,7 @@ func _rollback_step():
 	get_tree().create_timer(0.06).timeout.connect(_rollback_step)
 
 # ==========================================
-# ✨ Phase 5: 클리어 폴리싱 (쥬시니스)
-# ==========================================
-# ==========================================
-# ✨ Phase 5: 클리어 폴리싱 (잔상 제거 및 쥬시니스)
+# ✨ Phase 5: 클리어 폴리싱
 # ==========================================
 func play_clear_animation():
 	is_locked = true 
@@ -471,6 +481,9 @@ func highlight_hint_tile():
 	
 	if hint_action_tween and hint_action_tween.is_valid():
 		return
+	
+	# 클릭 사운드 재생
+	SoundManager.play_sfx(SoundManager.SFX.UI_CLICK, false, 0.0, 1.2)
 		
 	hint_action_tween = create_tween()
 	hint_target_tile.z_index = 20

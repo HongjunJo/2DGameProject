@@ -17,5 +17,19 @@
 
 ### 🖋️ 사용된 글꼴 (Font)
 * **리디바탕 (RIDI Batang)**
-    * 본 게임의 UI 및 텍스트에는 리디주식회사에서 제공한 [리디바탕 글꼴](https://ridicorp.com/ridibatang/)이 사용되어 있습니다.
-    * 리디바탕 글꼴은 개인 및 기업 사용자를 포함한 모든 사용자에게 무료로 제공되며 자유롭게 수정하고 재배포할 수 있는 Open Font License(OFL)를 따릅니다.
+	* 본 게임의 UI 및 텍스트에는 리디주식회사에서 제공한 [리디바탕 글꼴](https://ridicorp.com/ridibatang/)이 사용되어 있습니다.
+	* 리디바탕 글꼴은 개인 및 기업 사용자를 포함한 모든 사용자에게 무료로 제공되며 자유롭게 수정하고 재배포할 수 있는 Open Font License(OFL)를 따릅니다.
+
+---
+
+### 🎵 사용된 음원 (BGM / SFX)
+본 게임에 사용된 음악 및 효과음은 무료 저작권 사이트인 Pixabay의 오디오 리소스 및 CC0 리소스를 활용하였습니다.
+
+* **BGM (배경음악)**
+  * Music by [Akiko Shina](https://pixabay.com/ko/users/akiko_shina-42793791/) from [Pixabay](https://pixabay.com/)
+
+* **SFX (효과음)**
+  * **타일 잡기 / 밀어내기 / 타일 잠금 해제 / UI 클릭:** Sound Effect by [freesound_community](https://pixabay.com/ko/users/freesound_community-46691455/) from [Pixabay](https://pixabay.com/)
+  * **타일 고정 (잠금):** Sound Effect by [Jackson Fer******](https://pixabay.com/ko/users/pebblespengu1-50013954/) from [Pixabay](https://pixabay.com/)
+  * **힌트 활성화:** Sound Effect by [Universfield](https://pixabay.com/ko/users/universfield-28281460/) from [Pixabay](https://pixabay.com/)
+  * **유물 복원 성공 (클리어) / 텍스트 타이핑:** Sound Effect by [DRAGON-STUDIO](https://pixabay.com/ko/users/dragon-studio-38165424/) from [Pixabay](https://pixabay.com/)

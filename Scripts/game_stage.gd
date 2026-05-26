@@ -51,6 +51,8 @@ func _on_puzzle_cleared():
 	ui_manager.show_result_ui(GlobalData.get_current_level(), elapsed_time, GlobalData.is_last_level())
 
 func _on_next_stage_requested():
+	SoundManager.play_sfx(SoundManager.SFX.UI_CLICK)
+
 	if GlobalData.is_last_level():
 		GlobalData.current_level_index = 0
 		TransitionManager.change_scene("res://Scenes/MainMenu.tscn") # 메인 메뉴로 돌아가기
