@@ -11,3 +11,10 @@ script = ExtResource("1_xsjyq")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1677893407]
 shape = SubResource("RectangleShape2D_y18ax")
+
+[node name="HighlightBorder" type="ReferenceRect" parent="." unique_id=468771722]
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
+border_width = 10.0
+editor_only = false

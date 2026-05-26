@@ -185,8 +185,12 @@ func end_drag():
 	if not is_dragging: return
 	is_dragging = false
 	
-	var last_pos = path_stack.back()
-	tiles[last_pos].z_index = 0
+	if path_stack.size() > 0:
+		var last_pos = path_stack.back()
+		if tiles.has(last_pos):
+			tiles[last_pos].z_index = 0
+			# 드래그가 끝난 직후, 들고 있던 타일의 잔상을 억지로 지워버립니다
+			tiles[last_pos].force_unhover() 
 	
 	path_line.clear_points()
 	check_win_condition()
@@ -201,18 +205,22 @@ func _freeze_tile(tile: Tile):
 	var snap_pos = get_center_pos_from_grid(tile.current_grid_pos)
 	tile.position = snap_pos
 	
-	tile.scale = Vector2(1.1, 1.1)
-	tile.sprite.modulate = Color(0.65, 0.85, 1.0, 1.0)
+	tile.scale = Vector2(1.05, 1.05) 
+	
+	tile.sprite.modulate = Color(0.65, 0.85, 1.0, 1.0) 
+	
+	var border = tile.get_node("HighlightBorder")
+	border.border_color = Color(0.3, 0.6, 1.0, 1.0) # 파란색 테두리로 락온 표시
+	border.show()
+	
 	tile.z_index = 5
 
 func _unfreeze_tile(tile: Tile):
 	frozen_piece = null
-	tile.sprite.modulate = Color.WHITE
-	tile.z_index = 0
 	
-	# ✨ 픽스: 마우스가 화면 밖(허공)에서 우클릭으로 해제될 수 있으므로, 락이 풀리면 무조건 원래 크기(1.0)로 돌려줍니다.
-	var tween = create_tween()
-	tween.tween_property(tile, "scale", Vector2(1.0, 1.0), 0.1)
+	tile.sprite.modulate = Color.WHITE
+	tile.get_node("HighlightBorder").hide()
+	tile.z_index = 0
 
 # ==========================================
 # ✨ 쥬시니스 & 헬퍼 함수들
@@ -235,11 +243,17 @@ func swap_tiles(pos1: Vector2, pos2: Vector2, duration: float = 0.15):
 	tween.tween_property(tile1, "position", target_pos1, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(tile2, "position", target_pos2, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	
-	tile1.scale = Vector2(0.9, 0.9)
-	tile2.scale = Vector2(0.9, 0.9)
-	
-	tween.tween_property(tile1, "scale", Vector2(1.0, 1.0), duration * 1.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
-	tween.tween_property(tile2, "scale", Vector2(1.0, 1.0), duration * 1.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	if tile1.z_index >= 10:
+		tween.tween_property(tile1, "scale", Vector2(1.05, 1.05), duration) 
+	else:
+		tile1.scale = Vector2(0.9, 0.9) 
+		tween.tween_property(tile1, "scale", Vector2(1.0, 1.0), duration * 1.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+
+	if tile2.z_index >= 10:
+		tween.tween_property(tile2, "scale", Vector2(1.05, 1.05), duration) 
+	else:
+		tile2.scale = Vector2(0.9, 0.9) 
+		tween.tween_property(tile2, "scale", Vector2(1.0, 1.0), duration * 1.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 
 func get_grid_pos_from_local(local_pos: Vector2) -> Vector2:
 	var step = tile_size + Vector2(tile_spacing, tile_spacing)
@@ -309,8 +323,16 @@ func _rollback_step():
 # ==========================================
 # ✨ Phase 5: 클리어 폴리싱 (쥬시니스)
 # ==========================================
+# ==========================================
+# ✨ Phase 5: 클리어 폴리싱 (잔상 제거 및 쥬시니스)
+# ==========================================
 func play_clear_animation():
 	is_locked = true 
+	
+	path_line.clear_points()
+	path_stack.clear()
+	frozen_piece = null 
+	
 	var tween = create_tween().set_parallel(true)
 	
 	var grid = level_data.grid_size
@@ -324,11 +346,14 @@ func play_clear_animation():
 		var target_pos = pos * tile_size + (tile_size / 2)
 		
 		tile.sprite.modulate = Color.WHITE 
+		if tile.has_node("HighlightBorder"):
+			tile.get_node("HighlightBorder").hide()
 		
+		# 1.05로 커져 있던 타일들을 정답 자리로 이동시키면서 부드럽게 원래 크기(1.0)로 초기화!
+		tween.tween_property(tile, "scale", Vector2(1.0, 1.0), 0.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		tween.tween_property(tile, "position", target_pos, 0.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	
 	tween.chain().tween_callback(_play_glow_and_bounce)
-
 func _play_glow_and_bounce():
 	var tween = create_tween().set_parallel(true)
 	
