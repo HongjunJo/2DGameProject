@@ -23,6 +23,9 @@ var hint_action_tween: Tween
 var board_base_size: Vector2 
 var frozen_piece: Node2D = null
 
+# 타일 겹침(Tween Desync) 방지를 위해 각 타일의 애니메이션 상태를 개별 추적하는 딕셔너리
+var active_tweens: Dictionary = {} 
+
 # ==========================================
 # 보드 생성 및 초기화
 # ==========================================
@@ -161,29 +164,61 @@ func continue_drag(local_pos: Vector2):
 	var grid_pos = get_grid_pos_from_local(local_pos)
 	if not is_valid_grid_pos(grid_pos): return
 	if grid_pos == current_mouse_grid_pos: return 
+	
+	# 이동하려는 논리적 방향 계산
+	var diff_grid = grid_pos - current_mouse_grid_pos
+	
+	# 대각선으로 한 번에 진입하려는 움직임(모서리 걸침)은 무시합니다.
+	# 이를 통해 대각선 오작동을 차단하고 직선 십자 방향 조작을 강제합니다.
+	if abs(diff_grid.x) + abs(diff_grid.y) != 1:
+		return
+
+	# ==========================================
+	# 진행 방향 단면 임계값 (Directional Hysteresis) 적용
+	# ==========================================
+	var step = tile_size + Vector2(tile_spacing, tile_spacing)
+	var margin_x = tile_size.x * 0.20 # 가로 방향 임계값 (20% 깊이 진입 시 확정)
+	var margin_y = tile_size.y * 0.20 # 세로 방향 임계값 (20% 깊이 진입 시 확정)
+
+	if diff_grid.x == 1: 
+		# 우측 타일의 좌측 경계선 기준 margin_x 만큼 진입했는지 확인
+		if local_pos.x < grid_pos.x * step.x + margin_x: return
+		
+	elif diff_grid.x == -1: 
+		# 좌측 타일의 우측 경계선 기준 margin_x 만큼 진입했는지 확인
+		if local_pos.x > grid_pos.x * step.x + tile_size.x - margin_x: return
+		
+	elif diff_grid.y == 1: 
+		# 하단 타일의 상단 경계선 기준 margin_y 만큼 진입했는지 확인
+		if local_pos.y < grid_pos.y * step.y + margin_y: return
+		
+	elif diff_grid.y == -1: 
+		# 상단 타일의 하단 경계선 기준 margin_y 만큼 진입했는지 확인
+		if local_pos.y > grid_pos.y * step.y + tile_size.y - margin_y: return
+
+	# 모든 방향성 임계값을 통과했다면 현재 마우스 타일 위치를 확정합니다.
 	current_mouse_grid_pos = grid_pos
 	
 	var last_pos = path_stack.back()
 	
 	if grid_pos != last_pos:
-		var diff = grid_pos - last_pos
+		var move_diff = grid_pos - last_pos
 		
-		# 되돌아가기 판정: 스택의 바로 이전 위치(size-2)에 도달하면 스왑을 되돌리고 경로도 잘라냅니다.
+		# 이전 위치로 돌아갈 경우 상태 되돌리기 및 경로 삭감 처리
 		if path_stack.size() >= 2 and grid_pos == path_stack[path_stack.size() - 2]:
 			swap_tiles(last_pos, grid_pos)
 			path_stack.pop_back()
 			path_line.remove_point(path_line.get_points().size() - 1)
 			
-		# 인접한 타일 (상하좌우 1칸)으로의 드래그일 경우 진행합니다.
-		elif abs(diff.x) + abs(diff.y) == 1:
+		# 정상적인 1칸 전진 처리
+		elif abs(move_diff.x) + abs(move_diff.y) == 1:
 			var current_tile = tiles[last_pos]
 			
-			# 방문했던 곳(루프)으로 진입 시도 시 경고 피드백(흔들림)을 줍니다.
+			# 이미 방문한 타일(루프)로 진입 시 경고용 시각적 피드백 제공
 			if grid_pos in path_stack:
 				shake_tile(current_tile) 
 				return 
 				
-			# 타일 스왑 처리 및 경로 스택 추가
 			swap_tiles(last_pos, grid_pos)
 			path_stack.append(grid_pos)
 			
@@ -249,31 +284,39 @@ func swap_tiles(pos1: Vector2, pos2: Vector2, duration: float = 0.15):
 	tile1.current_grid_pos = pos2
 	tile2.current_grid_pos = pos1
 	
-	var step = tile_size + Vector2(tile_spacing, tile_spacing)
-	var target_pos1 = pos2 * step + (tile_size / 2)
-	var target_pos2 = pos1 * step + (tile_size / 2)
+	var target_pos1 = get_center_pos_from_grid(pos2)
+	var target_pos2 = get_center_pos_from_grid(pos1)
 	
-	# 부드러운 위치 이동(Tween) 연출 (사인(SINE) 곡선 활용)
-	var tween = create_tween().set_parallel(true)
+	# ==========================================
+	# 기존 트윈 강제 취소 지시 (겹침 현상 완벽 방지 처리)
+	# 트윈 데싱크로 인한 평면상 타일 겹침 렌더링을 차단합니다.
+	# ==========================================
+	if active_tweens.has(tile1) and active_tweens[tile1] and active_tweens[tile1].is_valid():
+		active_tweens[tile1].kill()
+	if active_tweens.has(tile2) and active_tweens[tile2] and active_tweens[tile2].is_valid():
+		active_tweens[tile2].kill()
+		
+	# 개별 트윈 새로 생성 및 추적기에 할당
+	active_tweens[tile1] = create_tween()
+	active_tweens[tile2] = create_tween()
 	
-	tween.tween_property(tile1, "position", target_pos1, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(tile2, "position", target_pos2, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	
-	# 드래그 중인 부유 상태의 타일들(z_index>=10)과 
-	# 밀려나는 바닥 타일들의 스케일(Scale)을 차별화하여 입체감을 더합니다.
+	# --- Tile 1 연출 ---
+	active_tweens[tile1].tween_property(tile1, "position", target_pos1, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	if tile1.z_index >= 10:
 		SoundManager.play_sfx(SoundManager.SFX.SWAP, false, 0.15, 0.7)
-		tween.tween_property(tile1, "scale", Vector2(1.05, 1.05), duration) 
+		active_tweens[tile1].parallel().tween_property(tile1, "scale", Vector2(1.05, 1.05), duration) 
 	else:
 		tile1.scale = Vector2(0.9, 0.9) 
-		tween.tween_property(tile1, "scale", Vector2(1.0, 1.0), duration * 1.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+		active_tweens[tile1].parallel().tween_property(tile1, "scale", Vector2(1.0, 1.0), duration * 1.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 
+	# --- Tile 2 연출 ---
+	active_tweens[tile2].tween_property(tile2, "position", target_pos2, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	if tile2.z_index >= 10:
 		SoundManager.play_sfx(SoundManager.SFX.SWAP, false, 0.15, 0.7)
-		tween.tween_property(tile2, "scale", Vector2(1.05, 1.05), duration) 
+		active_tweens[tile2].parallel().tween_property(tile2, "scale", Vector2(1.05, 1.05), duration) 
 	else:
 		tile2.scale = Vector2(0.9, 0.9) 
-		tween.tween_property(tile2, "scale", Vector2(1.0, 1.0), duration * 1.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+		active_tweens[tile2].parallel().tween_property(tile2, "scale", Vector2(1.0, 1.0), duration * 1.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 
 func get_grid_pos_from_local(local_pos: Vector2) -> Vector2:
 	var step = tile_size + Vector2(tile_spacing, tile_spacing)
