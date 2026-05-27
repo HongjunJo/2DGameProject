@@ -9,5 +9,5 @@ level_name = "일월오봉도 (日月五峰圖)"
 collection_place = "국립중앙박물관"
 artifact_texture = ExtResource("1_owmb0")
 grid_size = Vector2(5, 4)
-shuffle_steps = 50
+hint_wait_time = 35.0
 metadata/_custom_type_script = "uid://dq8uf0uuh8r06"
