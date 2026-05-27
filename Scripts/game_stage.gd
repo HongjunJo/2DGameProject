@@ -20,7 +20,6 @@ func _ready():
 	ui_manager.view_button_up.connect(func(): ui_manager.hide_overlay())
 	ui_manager.hint_button_pressed.connect(_on_hint_pressed)
 	hint_timer.timeout.connect(_on_hint_timer_timeout)
-	board_manager.player_interacted.connect(_reset_idle_timer)
 	board_manager.puzzle_cleared.connect(_on_puzzle_cleared)
 	ui_manager.next_stage_pressed.connect(_on_next_stage_requested)
 
@@ -64,12 +63,8 @@ func _on_hint_timer_timeout():
 	is_hint_unlocked = true 
 	ui_manager.play_hint_button_pulse()
 
-func _reset_idle_timer():
-	if is_hint_unlocked:
-		return 
-		
-	hint_timer.start(current_hint_time) 
-	ui_manager.reset_hint_button()
+func _on_hint_pressed():
+	board_manager.highlight_hint_tile()
 
 func _on_board_generated(texture: Texture2D, pos: Vector2, size: Vector2):
 	ui_manager.setup_overlay(texture, pos, size)
@@ -93,8 +88,3 @@ func _on_board_generated(texture: Texture2D, pos: Vector2, size: Vector2):
 		mat.set_shader_parameter("screen_size", screen_size)
 		mat.set_shader_parameter("puzzle_size", puzzle_size)
 		mat.set_shader_parameter("puzzle_pos", puzzle_pos)
-
-func _on_hint_pressed():
-	board_manager.highlight_hint_tile()
-
-	
