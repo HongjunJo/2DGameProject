@@ -11,7 +11,7 @@ signal next_stage_pressed
 @onready var btn_hint: Button = %BtnHint
 
 @onready var result_panel: Control = %ResultPanel
-@onready var image_frame: ColorRect = %ImageFrame # ✨ 추가: 크기를 동적으로 제어할 액자 노드
+@onready var image_frame: ColorRect = %ImageFrame # 비율에 따라 크기 조절이 가능한 결과 프레임 노드
 @onready var result_texture: TextureRect = %ResultTexture
 @onready var artifact_name_label: Label = %ArtifactNameLabel
 @onready var collection_label: Label = %CollectionLabel
@@ -32,7 +32,7 @@ func _ready():
 	reset_hint_button()
 
 # ==========================================
-# ✨ 원본보기 오버레이 설정 함수 (위치와 크기 동적 조절)
+# 오버레이 제어 및 초기화 (좌표 및 비율 동적 조정 포함)
 # ==========================================
 func setup_overlay(texture: Texture2D, _board_pos: Vector2, scaled_size: Vector2):
 	target_overlay.texture = texture
@@ -43,8 +43,7 @@ func setup_overlay(texture: Texture2D, _board_pos: Vector2, scaled_size: Vector2
 	var viewport_size = get_viewport().get_visible_rect().size
 	var margin = Vector2(40, 40) # 좌측과 하단에서 떨어뜨릴 여백 설정
 	
-	# 📐 픽스: 화면 좌측 하단 정렬 공식
-	# X축은 좌측 마진(margin.x) 고정, Y축은 화면 전체 높이 - 이미지 높이 - 하단 여백
+	# UI 정렬 처리: 화면 최좌단 및 하단 기준으로 오버레이 위치 계산
 	var left_bottom_pos = Vector2(
 		margin.x, 
 		viewport_size.y - scaled_size.y - margin.y
@@ -53,7 +52,7 @@ func setup_overlay(texture: Texture2D, _board_pos: Vector2, scaled_size: Vector2
 	target_overlay.reset_transform(left_bottom_pos, scaled_size)
 
 # ==========================================
-# ✨ 원본보기 오버레이 토글 함수
+# 오버레이 노출 상태 토글
 # ==========================================
 func _toggle_overlay():
 	# 클릭 사운드 재생
@@ -66,7 +65,7 @@ func _toggle_overlay():
 		target_overlay.hide()
 
 # ==========================================
-# ✨ 결과창 띄우기 (동적 종횡비 크기 변환 적용)
+# 결과창 패널 렌더링 및 동적 비율 대응
 # ==========================================
 func show_result_ui(level_data: LevelData, time_in_seconds: float, is_last: bool):
 	result_texture.texture = level_data.artifact_texture
@@ -83,7 +82,7 @@ func show_result_ui(level_data: LevelData, time_in_seconds: float, is_last: bool
 		btn_next_stage.text = "다음 유물 복원하기"
 
 	# --------------------------------------------------------
-	# 📐 핵심: 원본 이미지 비율 가져와서 액자 크기 동적 조절하기
+	# 원본 데이터 종횡비(Aspect Ratio)를 분석하여 액자의 변환 규격 적용
 	# --------------------------------------------------------
 	var img_size = level_data.artifact_texture.get_size()
 	var aspect_ratio = img_size.x / img_size.y # 종횡비 (가로 / 세로)
@@ -108,7 +107,7 @@ func show_result_ui(level_data: LevelData, time_in_seconds: float, is_last: bool
 	create_tween().tween_property(result_panel, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
-# ✨ 픽스: 클리어 시 인게임 버튼들과 함께 '원본보기' 팝업도 싹 청소
+# 게임 플레이 상태 종료에 따른 인게임 UI 버튼 초기화
 func disable_all_buttons():
 	btn_view.disabled = true
 	btn_hint.disabled = true
@@ -130,7 +129,7 @@ func disable_all_buttons():
 	)
 
 # ==========================================
-# ✨ 추가: 힌트 쿨타임 텍스트 업데이트 함수
+# 힌트 시스템 쿨타임 UI 처리
 # ==========================================
 func update_hint_cooldown(time_left: float):
 	if time_left > 0:
@@ -144,7 +143,7 @@ func play_hint_button_pulse():
 	if hint_tween and hint_tween.is_valid():
 		return
 	btn_hint.disabled = false 
-	btn_hint.text = "힌 트" # ✨ 쿨타임 끝나면 텍스트 원상복구
+	btn_hint.text = "힌 트" # 쿨타임 종료 후 기본 텍스트 상태로 수복
 
 	SoundManager.play_sfx(SoundManager.SFX.HINT, false, 0.0, 0.8)
 
@@ -158,4 +157,4 @@ func reset_hint_button():
 		hint_tween.kill()
 	btn_hint.disabled = true
 	btn_hint.modulate = Color(1, 1, 1, 0.5)
-	btn_hint.text = "힌 트" # ✨ 초기화할 때도 텍스트 원상복구
+	btn_hint.text = "힌 트" # 버튼 비활성화 상태에서 기본 텍스트 출력

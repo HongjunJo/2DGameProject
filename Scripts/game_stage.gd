@@ -7,7 +7,7 @@ extends Node2D
 var current_hint_time: float = 15.0
 var is_hint_unlocked: bool = false 
 
-# ✨ 타이머 추적용 내부 변수들
+# 퍼즐 진행 시간 및 상태 추적 변수
 var elapsed_time: float = 0.0 
 var is_game_active: bool = false 
 
@@ -27,7 +27,7 @@ func _ready():
 	current_hint_time = current_level.hint_wait_time
 	hint_timer.start(current_hint_time)
 
-	# ✨ 스테이지 시작 시 내부 스톱워치 온!
+	# 스테이지 본격 시작 전 타이머 활성화
 	elapsed_time = 0.0
 	is_game_active = true
 
@@ -41,12 +41,12 @@ func _process(delta: float):
 			ui_manager.update_hint_cooldown(hint_timer.time_left)
 
 func _on_puzzle_cleared():
-	# ✨ 클리어 순간 초시계 즉시 정지
+	# 퍼즐 클리어 시 타이머 진행을 중단하고 UI 상호작용 차단
 	is_game_active = false 
 	hint_timer.stop()
 	ui_manager.disable_all_buttons()
 	
-	# 연출이 끝나는 타이밍에 맞춰 데이터와 기록을 통째로 넘겨 결과창 출력!
+	# 연출 완료 대기 후 레벨 데이터 및 최종 시간을 결과창으로 전달
 	await get_tree().create_timer(1.5).timeout
 	ui_manager.show_result_ui(GlobalData.get_current_level(), elapsed_time, GlobalData.is_last_level())
 
@@ -75,9 +75,9 @@ func _on_board_generated(texture: Texture2D, pos: Vector2, size: Vector2):
 	ui_manager.setup_overlay(texture, pos, size)
 	
 	# ==========================================
-	# ✨ 배경 스포트라이트(비네팅) 셰이더 데이터 주입
+	# 배경 스포트라이트(비네팅) 셰이더 동적 데이터 할당
 	# ==========================================
-	# 1. 셰이더를 컨트롤할 Vignette 노드 가져오기
+	# 1. 시각 효과를 관장하는 Vignette 머티리얼 획득
 	var vignette = $BackgroundLayer/Vignette 
 	
 	# 2. 현재 화면의 실제 해상도 크기 구하기

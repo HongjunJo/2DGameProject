@@ -18,20 +18,23 @@ func _ready():
 	mouse_exited.connect(_on_mouse_exited)
 	set_process(false)
 
+# ==========================================
+# 마우스 커서 아이콘 동적 변경 (모서리/면 감지)
+# ==========================================
 func _process(_delta):
-	# 마우스 위치에 따라 8방향 커서 아이콘 지원
+	# 마우스 위치에 따라 8방향 리사이즈 커서 아이콘 지원
 	if not is_dragging and active_resize_handle == "":
 		var handle = _get_hovered_handle()
 		if handle in ["TL", "BR"]: 
-			mouse_default_cursor_shape = Control.CURSOR_FDIAGSIZE 
+			mouse_default_cursor_shape = Control.CURSOR_FDIAGSIZE  # 우하향 대각선
 		elif handle in ["TR", "BL"]: 
-			mouse_default_cursor_shape = Control.CURSOR_BDIAGSIZE
-		elif handle in ["L", "R"]: # 좌/우 면
-			mouse_default_cursor_shape = Control.CURSOR_HSIZE
-		elif handle in ["T", "B"]: # 상/하 면
-			mouse_default_cursor_shape = Control.CURSOR_VSIZE
+			mouse_default_cursor_shape = Control.CURSOR_BDIAGSIZE  # 우상향 대각선
+		elif handle in ["L", "R"]: 
+			mouse_default_cursor_shape = Control.CURSOR_HSIZE      # 좌우 수평
+		elif handle in ["T", "B"]: 
+			mouse_default_cursor_shape = Control.CURSOR_VSIZE      # 상하 수직
 		else:
-			mouse_default_cursor_shape = Control.CURSOR_MOVE
+			mouse_default_cursor_shape = Control.CURSOR_MOVE       # 기본 드래그 이동
 
 func _gui_input(event):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -49,7 +52,7 @@ func _gui_input(event):
 			is_dragging = false
 			active_resize_handle = ""
 			
-	# ✨ 픽스 1: 지터링을 유발하던 중심점 보정을 빼고, 가장 심플하고 안정적인 줌으로 롤백
+	# 휠 기능: 지터링 방지를 위해 중심점 보정 없이 심플하고 안정적인 줌 축소/확대 적용
 	elif event is InputEventMouseButton and event.pressed:
 		var zoom_speed = 40.0
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
@@ -64,7 +67,7 @@ func _gui_input(event):
 			_apply_resize()
 
 # ==========================================
-# ✨ 8방향 모서리 & 면 크기 조절 (비율 고정)
+# 창 크기 조절 (8방향 모서리 및 면 처리, 비율 고정)
 # ==========================================
 func _apply_resize():
 	var current_mouse = get_global_mouse_position()
@@ -78,7 +81,7 @@ func _apply_resize():
 	# 좌측(-) 방향으로 당길 때
 	elif active_resize_handle in ["L", "BL", "TL"]:
 		target_width = drag_start_size.x - mouse_delta.x
-	# 하단 면을 당길 때는 Y축 이동량을 이용해 가로 너비 역산
+	# 하단/상단 면을 당길 때는 Y축 이동량을 이용해 가로 너비를 역산 (종횡비 유지)
 	elif active_resize_handle == "B":
 		var target_height = drag_start_size.y + mouse_delta.y
 		target_width = target_height * aspect_ratio
@@ -87,13 +90,14 @@ func _apply_resize():
 		var target_height = drag_start_size.y - mouse_delta.y
 		target_width = target_height * aspect_ratio
 
+	# 최솟값 최소댓값 클램핑(Clamping) 처리 후 종횡비(aspect_ratio) 반영
 	var new_width = clamp(target_width, min_width, max_width)
 	var new_size = Vector2(new_width, new_width / aspect_ratio)
 	var size_diff = new_size - drag_start_size
 	
 	var new_pos = drag_start_pos
 
-	# 당기는 방향에 반대되는 축을 고정(보정)시켜 줍니다.
+	# 당기는 방향에 위치한 축만을 기준점(Origin)으로 삼아 크기를 늘리기 위해 위치값을 보정합니다.
 	if active_resize_handle in ["TR", "T"]:
 		new_pos.y -= size_diff.y
 	elif active_resize_handle == "BL":

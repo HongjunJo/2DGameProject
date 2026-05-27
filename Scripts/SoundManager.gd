@@ -59,6 +59,7 @@ func stop_bgm():
 func play_sfx(sfx_type: SFX, duck_bgm: bool = false, pitch_variance: float = 0.05, volume_scale: float = 1.0):
 	if sfx_type >= sfx_clips.size() or sfx_clips[sfx_type] == null: return
 		
+	# 동시다발적으로 동일한 효과음이 재생되어 소리가 깨지거나 과도하게 커지는 현상(Ear-rape) 방지
 	var current_time = Time.get_ticks_msec() / 1000.0
 	
 	if sfx_play_time.has(sfx_type):
@@ -66,18 +67,21 @@ func play_sfx(sfx_type: SFX, duck_bgm: bool = false, pitch_variance: float = 0.0
 		if current_time - last_time < 0.05: return 
 	sfx_play_time[sfx_type] = current_time
 	
+	# 대기 중인 빈 오디오 플레이어를 풀에서 가져와 소스 할당
 	var source = _get_free_sfx_source()
 	source.stream = sfx_clips[sfx_type]
 	source.volume_db = linear_to_db(volume_scale)
 	
+	# 효과음에 약간의 피치 변화를 주어 반복 재생 시의 단조로움 회피
 	source.pitch_scale = 1.0 + randf_range(-pitch_variance, pitch_variance)
 	source.play()
 
+	# 중요한 효과음(예: 클리어) 재생 시 배경음악 볼륨을 임시로 낮추는 Ducking 효과 적용
 	if duck_bgm and bgm_player.playing:
 		_apply_ducking(source.stream.get_length())
 
 # ==========================================
-# ✨ 특정 SFX 즉시 정지 함수 (로어 씬 스킵용)
+# 특정 SFX 즉시 정지 제어 (장면 전환 및 예외 처리용)
 # ==========================================
 func stop_sfx(sfx_type: SFX):
 	if sfx_type >= sfx_clips.size() or sfx_clips[sfx_type] == null: return
@@ -89,22 +93,30 @@ func stop_sfx(sfx_type: SFX):
 		if source.playing and source.stream == target_stream:
 			source.stop()
 
-# --- Ducking & Pool ---
+# ==========================================
+# 오디오 폴링 및 더킹(Ducking) 처리
+# ==========================================
 func _apply_ducking(sfx_duration: float):
+	# 기존에 진행 중인 더킹 연출이 있다면 취소하고, 없다면 현재 볼륨 백업
 	if bgm_duck_tween and bgm_duck_tween.is_valid():
 		bgm_duck_tween.kill()
 	else:
 		base_bgm_db = bgm_player.volume_db 
 
 	bgm_duck_tween = create_tween()
+	# 1. 효과음 재생 즉시 BGM 볼륨을 -5dB 낮춤
 	bgm_duck_tween.tween_property(bgm_player, "volume_db", base_bgm_db - 5.0, 0.1) 
+	# 2. 효과음 길이의 80% 시간 동안 낮은 볼륨 유지
 	bgm_duck_tween.tween_interval(sfx_duration * 0.8)
+	# 3. 그 후 서서히 원래 볼륨으로 복구
 	bgm_duck_tween.tween_property(bgm_player, "volume_db", base_bgm_db, 0.25)
 
+# 사용 가능한 여유 오디오 플레이어를 반환 (오디오 풀링 기법)
 func _get_free_sfx_source() -> AudioStreamPlayer:
 	for source in sfx_pool:
 		if not source.playing: return source
 			
+	# 모든 플레이어가 사용 중이라면 풀 사이즈를 확장하여 새로 생성
 	var new_source = _create_audio_player("SFX_Source_Expanded_" + str(sfx_pool.size()), "SFX")
 	sfx_pool.append(new_source)
 	return new_source

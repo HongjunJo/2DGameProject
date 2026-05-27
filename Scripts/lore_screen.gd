@@ -7,8 +7,8 @@ var type_tween: Tween
 var is_typing: bool = true
 
 func _ready():
-	next_button.hide() # 처음엔 입장 버튼을 꽁꽁 숨겨둡니다.
-	lore_label.visible_characters = 0 # 글자를 0개만 보이게 (전부 숨김) 세팅
+	next_button.hide() # 진입 시 다음 버튼(입장) 비활성화
+	lore_label.visible_characters = 0 # 텍스트 초기화 (글자를 모두 숨겨 타이프라이터 효과 준비)
 	
 	start_typewriter_effect()
 	next_button.pressed.connect(_on_next_pressed)
@@ -37,28 +37,27 @@ func start_typewriter_effect():
 		if i < lines.size() - 1:
 			accumulated_chars += 1 # \n 문자 자체의 카운트 추가
 
-			# 한 줄을 다 읽을 수 있도록 0.35초 동안 멈춤(Interval)
-			# 이 수치를 조절해서 머무르는 시간을 마음대로 바꿀 수 있습니다.
+	# 한 줄을 다 읽을 수 있도록 간격을 주어 타이핑 연출 제어 (머무르는 시간)
 			type_tween.tween_interval(0.35)
 
-			# 즉시 줄바꿈 처리를 실행하여 다음 줄 시작점으로 커서를 내림
+			# 줄바꿈 문자를 출력하여 커서를 다음 줄로 내려줌
 			type_tween.tween_property(lore_label, "visible_characters", accumulated_chars, 0.01)
 
 	type_tween.finished.connect(_on_type_finished)
 
-# 텍스트 출력이 모두 끝났을 때
+# 텍스트 출력이 모두 완료되었을 때의 처리
 func _on_type_finished():
 	is_typing = false
-	lore_label.visible_characters = -1 # -1은 '모든 글자 표시'를 뜻하는 엔진의 안전장치입니다.
+	lore_label.visible_characters = -1 # 엔진의 렌더링 최적화를 이용해 모든 글자를 노출 상태로 확정
 	
-	SoundManager.stop_sfx(SoundManager.SFX.TYPING) # 타이핑 사운드가 아직 재생 중이라면 즉시 정지
+	SoundManager.stop_sfx(SoundManager.SFX.TYPING) 
 
-	# 버튼이 그냥 띡! 나타나는 것보다 페이드인으로 스르륵 나타나는 게 더 예쁩니다.
+	# UI 페이드 인: 종료 버튼을 서서히 노출 (알파값 0 -> 1 트위닝)
 	next_button.modulate.a = 0
 	next_button.show()
 	create_tween().tween_property(next_button, "modulate:a", 1.0, 0.5).set_trans(Tween.TRANS_SINE)
 
-# 화면 어디든 클릭하면 실행되는 전역 입력 감지
+# 마우스 입력 이벤트: 화면 클릭 시 현재 진행 중인 타이핑 연출 스킵
 func _input(event):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		if is_typing:

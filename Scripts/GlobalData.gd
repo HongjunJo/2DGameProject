@@ -1,7 +1,7 @@
 extends Node
 
+# 게임 전체 레벨 데이터 관리
 @export var levels: Array[LevelData] = []
-
 var current_level_index: int = 0
 
 func get_current_level() -> LevelData:

@@ -3,7 +3,7 @@ class_name Tile
 
 var current_grid_pos: Vector2
 var target_grid_pos: Vector2
-var hover_tween: Tween # ✨ 픽스: 날아갔던 트윈 변수 선언 복구!
+var hover_tween: Tween # 마우스 호버 트윈 참조(충돌 제어 방지용)
 
 @onready var sprite = $Sprite2D
 @onready var collision = $CollisionShape2D
@@ -30,7 +30,7 @@ func setup(texture: Texture2D, region_rect: Rect2, grid_pos: Vector2, tile_size:
 	highlight_border.position = -(tile_size / 2.0)
 
 # ==========================================
-# 🖱️ 마우스 호버: 테두리 + 쥬시한 스케일 업 (1.05 통일)
+# 인터랙션 이벤트 처리 (호버 효과 및 스케일 업)
 # ==========================================
 func _on_mouse_entered():
 	var board = get_parent() as BoardManager
@@ -63,10 +63,10 @@ func _on_mouse_exited():
 	z_index = 0
 
 # ==========================================
-# ✨ 비상 스위치: 강제로 시각 효과(테두리, 크기) 초기화
+# 강제 상태 초기화 (드래그 종료 시 호버 트윈 및 상태 정리용)
 # ==========================================
 func force_unhover():
-	# 얼려진(프리즈) 상태라면 건드리지 않음
+	# 우클릭으로 고정된(Freeze) 타일은 드래그 중단 시 초기화되지 않도록 메타데이터 검증 예외 처리
 	if has_meta("is_frozen") and get_meta("is_frozen"): 
 		return
 		

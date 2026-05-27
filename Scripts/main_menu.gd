@@ -3,7 +3,7 @@ extends Control
 @onready var btn_start = %BtnStart
 
 func _ready():
-	# 🎵 메인 메뉴 진입 시 BGM 재생
+	# 메인 메뉴 씬 시작 시 기본 BGM 재생
 	SoundManager.play_bgm(1.0)
 	btn_start.pressed.connect(_on_start_pressed)
 
